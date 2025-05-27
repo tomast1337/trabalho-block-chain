@@ -1,17 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-        "@abi-types/*": [
-            "../../packages/abi-types/src/types/*"
-        ]
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "baseUrl": ".",
+        "paths": {
+            "@abi-types/*": [
+                "../abi-types/src/*"
+            ]
+        }
     }
-  }
 }

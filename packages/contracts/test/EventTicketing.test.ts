@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { EventTicketing } from "../typechain-types";
+import { EventTicketing } from "@abi-types/EventTicketing";
 
 describe("EventTicketing", function () {
   let eventTicketing: EventTicketing;
