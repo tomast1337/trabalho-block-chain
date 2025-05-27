@@ -3,38 +3,31 @@
 /* eslint-disable */
 import type {
   BaseContract,
-  BigNumber,
+  BigNumberish,
   BytesLike,
-  CallOverrides,
-  ContractTransaction,
-  Overrides,
-  PopulatedTransaction,
-  Signer,
-  utils,
-} from "ethers";
-import type {
   FunctionFragment,
   Result,
+  Interface,
   EventFragment,
-} from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+  ContractRunner,
+  ContractMethod,
+  Listener,
+} from "ethers";
 import type {
-  TypedEventFilter,
-  TypedEvent,
+  TypedContractEvent,
+  TypedDeferredTopicFilter,
+  TypedEventLog,
+  TypedLogDescription,
   TypedListener,
-  OnEvent,
+  TypedContractMethod,
 } from "./common";
 
-export interface LockInterface extends utils.Interface {
-  functions: {
-    "owner()": FunctionFragment;
-    "unlockTime()": FunctionFragment;
-    "withdraw()": FunctionFragment;
-  };
-
+export interface LockInterface extends Interface {
   getFunction(
-    nameOrSignatureOrTopic: "owner" | "unlockTime" | "withdraw"
+    nameOrSignature: "owner" | "unlockTime" | "withdraw"
   ): FunctionFragment;
+
+  getEvent(nameOrSignatureOrTopic: "Withdrawal"): EventFragment;
 
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -46,100 +39,102 @@ export interface LockInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "unlockTime", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
-
-  events: {
-    "Withdrawal(uint256,uint256)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "Withdrawal"): EventFragment;
 }
 
-export interface WithdrawalEventObject {
-  amount: BigNumber;
-  when: BigNumber;
+export namespace WithdrawalEvent {
+  export type InputTuple = [amount: BigNumberish, when: BigNumberish];
+  export type OutputTuple = [amount: bigint, when: bigint];
+  export interface OutputObject {
+    amount: bigint;
+    when: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type WithdrawalEvent = TypedEvent<
-  [BigNumber, BigNumber],
-  WithdrawalEventObject
->;
-
-export type WithdrawalEventFilter = TypedEventFilter<WithdrawalEvent>;
 
 export interface Lock extends BaseContract {
-  connect(signerOrProvider: Signer | Provider | string): this;
-  attach(addressOrName: string): this;
-  deployed(): Promise<this>;
+  connect(runner?: ContractRunner | null): Lock;
+  waitForDeployment(): Promise<this>;
 
   interface: LockInterface;
 
-  queryFilter<TEvent extends TypedEvent>(
-    event: TypedEventFilter<TEvent>,
+  queryFilter<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
     fromBlockOrBlockhash?: string | number | undefined,
     toBlock?: string | number | undefined
-  ): Promise<Array<TEvent>>;
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
+  queryFilter<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
 
-  listeners<TEvent extends TypedEvent>(
-    eventFilter?: TypedEventFilter<TEvent>
-  ): Array<TypedListener<TEvent>>;
-  listeners(eventName?: string): Array<Listener>;
-  removeAllListeners<TEvent extends TypedEvent>(
-    eventFilter: TypedEventFilter<TEvent>
-  ): this;
-  removeAllListeners(eventName?: string): this;
-  off: OnEvent<this>;
-  on: OnEvent<this>;
-  once: OnEvent<this>;
-  removeListener: OnEvent<this>;
+  on<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  on<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-  functions: {
-    owner(overrides?: CallOverrides): Promise<[string]>;
+  once<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  once<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-    unlockTime(overrides?: CallOverrides): Promise<[BigNumber]>;
+  listeners<TCEvent extends TypedContractEvent>(
+    event: TCEvent
+  ): Promise<Array<TypedListener<TCEvent>>>;
+  listeners(eventName?: string): Promise<Array<Listener>>;
+  removeAllListeners<TCEvent extends TypedContractEvent>(
+    event?: TCEvent
+  ): Promise<this>;
 
-    withdraw(
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-  };
+  owner: TypedContractMethod<[], [string], "view">;
 
-  owner(overrides?: CallOverrides): Promise<string>;
+  unlockTime: TypedContractMethod<[], [bigint], "view">;
 
-  unlockTime(overrides?: CallOverrides): Promise<BigNumber>;
+  withdraw: TypedContractMethod<[], [void], "nonpayable">;
 
-  withdraw(
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
+  getFunction<T extends ContractMethod = ContractMethod>(
+    key: string | FunctionFragment
+  ): T;
 
-  callStatic: {
-    owner(overrides?: CallOverrides): Promise<string>;
+  getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "unlockTime"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "withdraw"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
-    unlockTime(overrides?: CallOverrides): Promise<BigNumber>;
-
-    withdraw(overrides?: CallOverrides): Promise<void>;
-  };
+  getEvent(
+    key: "Withdrawal"
+  ): TypedContractEvent<
+    WithdrawalEvent.InputTuple,
+    WithdrawalEvent.OutputTuple,
+    WithdrawalEvent.OutputObject
+  >;
 
   filters: {
-    "Withdrawal(uint256,uint256)"(
-      amount?: null,
-      when?: null
-    ): WithdrawalEventFilter;
-    Withdrawal(amount?: null, when?: null): WithdrawalEventFilter;
-  };
-
-  estimateGas: {
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    unlockTime(overrides?: CallOverrides): Promise<BigNumber>;
-
-    withdraw(overrides?: Overrides & { from?: string }): Promise<BigNumber>;
-  };
-
-  populateTransaction: {
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    unlockTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    withdraw(
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
+    "Withdrawal(uint256,uint256)": TypedContractEvent<
+      WithdrawalEvent.InputTuple,
+      WithdrawalEvent.OutputTuple,
+      WithdrawalEvent.OutputObject
+    >;
+    Withdrawal: TypedContractEvent<
+      WithdrawalEvent.InputTuple,
+      WithdrawalEvent.OutputTuple,
+      WithdrawalEvent.OutputObject
+    >;
   };
 }

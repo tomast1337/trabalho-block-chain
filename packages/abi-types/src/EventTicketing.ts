@@ -3,44 +3,29 @@
 /* eslint-disable */
 import type {
   BaseContract,
-  BigNumber,
   BigNumberish,
   BytesLike,
-  CallOverrides,
-  ContractTransaction,
-  Overrides,
-  PayableOverrides,
-  PopulatedTransaction,
-  Signer,
-  utils,
-} from "ethers";
-import type {
   FunctionFragment,
   Result,
+  Interface,
   EventFragment,
-} from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+  AddressLike,
+  ContractRunner,
+  ContractMethod,
+  Listener,
+} from "ethers";
 import type {
-  TypedEventFilter,
-  TypedEvent,
+  TypedContractEvent,
+  TypedDeferredTopicFilter,
+  TypedEventLog,
+  TypedLogDescription,
   TypedListener,
-  OnEvent,
+  TypedContractMethod,
 } from "./common";
 
-export interface EventTicketingInterface extends utils.Interface {
-  functions: {
-    "buyTicket(uint256,uint256)": FunctionFragment;
-    "createEvent(string,string,uint256,uint256,uint256)": FunctionFragment;
-    "eventCount()": FunctionFragment;
-    "events(uint256)": FunctionFragment;
-    "getEventDetails(uint256)": FunctionFragment;
-    "getTicketsOwned(uint256,address)": FunctionFragment;
-    "owner()": FunctionFragment;
-    "withdrawFunds(uint256)": FunctionFragment;
-  };
-
+export interface EventTicketingInterface extends Interface {
   getFunction(
-    nameOrSignatureOrTopic:
+    nameOrSignature:
       | "buyTicket"
       | "createEvent"
       | "eventCount"
@@ -50,6 +35,13 @@ export interface EventTicketingInterface extends utils.Interface {
       | "owner"
       | "withdrawFunds"
   ): FunctionFragment;
+
+  getEvent(
+    nameOrSignatureOrTopic:
+      | "EventCreated"
+      | "FundsWithdrawn"
+      | "TicketPurchased"
+  ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "buyTicket",
@@ -73,7 +65,7 @@ export interface EventTicketingInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getTicketsOwned",
-    values: [BigNumberish, string]
+    values: [BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -101,446 +93,325 @@ export interface EventTicketingInterface extends utils.Interface {
     functionFragment: "withdrawFunds",
     data: BytesLike
   ): Result;
-
-  events: {
-    "EventCreated(uint256,address,string,uint256,uint256,uint256)": EventFragment;
-    "FundsWithdrawn(uint256,address,uint256)": EventFragment;
-    "TicketPurchased(uint256,address,uint256)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "EventCreated"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "FundsWithdrawn"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "TicketPurchased"): EventFragment;
 }
 
-export interface EventCreatedEventObject {
-  eventId: BigNumber;
-  organizer: string;
-  name: string;
-  ticketPrice: BigNumber;
-  totalTickets: BigNumber;
-  eventDate: BigNumber;
+export namespace EventCreatedEvent {
+  export type InputTuple = [
+    eventId: BigNumberish,
+    organizer: AddressLike,
+    name: string,
+    ticketPrice: BigNumberish,
+    totalTickets: BigNumberish,
+    eventDate: BigNumberish
+  ];
+  export type OutputTuple = [
+    eventId: bigint,
+    organizer: string,
+    name: string,
+    ticketPrice: bigint,
+    totalTickets: bigint,
+    eventDate: bigint
+  ];
+  export interface OutputObject {
+    eventId: bigint;
+    organizer: string;
+    name: string;
+    ticketPrice: bigint;
+    totalTickets: bigint;
+    eventDate: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type EventCreatedEvent = TypedEvent<
-  [BigNumber, string, string, BigNumber, BigNumber, BigNumber],
-  EventCreatedEventObject
->;
 
-export type EventCreatedEventFilter = TypedEventFilter<EventCreatedEvent>;
-
-export interface FundsWithdrawnEventObject {
-  eventId: BigNumber;
-  organizer: string;
-  amount: BigNumber;
+export namespace FundsWithdrawnEvent {
+  export type InputTuple = [
+    eventId: BigNumberish,
+    organizer: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [
+    eventId: bigint,
+    organizer: string,
+    amount: bigint
+  ];
+  export interface OutputObject {
+    eventId: bigint;
+    organizer: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type FundsWithdrawnEvent = TypedEvent<
-  [BigNumber, string, BigNumber],
-  FundsWithdrawnEventObject
->;
 
-export type FundsWithdrawnEventFilter = TypedEventFilter<FundsWithdrawnEvent>;
-
-export interface TicketPurchasedEventObject {
-  eventId: BigNumber;
-  attendee: string;
-  quantity: BigNumber;
+export namespace TicketPurchasedEvent {
+  export type InputTuple = [
+    eventId: BigNumberish,
+    attendee: AddressLike,
+    quantity: BigNumberish
+  ];
+  export type OutputTuple = [
+    eventId: bigint,
+    attendee: string,
+    quantity: bigint
+  ];
+  export interface OutputObject {
+    eventId: bigint;
+    attendee: string;
+    quantity: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type TicketPurchasedEvent = TypedEvent<
-  [BigNumber, string, BigNumber],
-  TicketPurchasedEventObject
->;
-
-export type TicketPurchasedEventFilter = TypedEventFilter<TicketPurchasedEvent>;
 
 export interface EventTicketing extends BaseContract {
-  connect(signerOrProvider: Signer | Provider | string): this;
-  attach(addressOrName: string): this;
-  deployed(): Promise<this>;
+  connect(runner?: ContractRunner | null): EventTicketing;
+  waitForDeployment(): Promise<this>;
 
   interface: EventTicketingInterface;
 
-  queryFilter<TEvent extends TypedEvent>(
-    event: TypedEventFilter<TEvent>,
+  queryFilter<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
     fromBlockOrBlockhash?: string | number | undefined,
     toBlock?: string | number | undefined
-  ): Promise<Array<TEvent>>;
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
+  queryFilter<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
 
-  listeners<TEvent extends TypedEvent>(
-    eventFilter?: TypedEventFilter<TEvent>
-  ): Array<TypedListener<TEvent>>;
-  listeners(eventName?: string): Array<Listener>;
-  removeAllListeners<TEvent extends TypedEvent>(
-    eventFilter: TypedEventFilter<TEvent>
-  ): this;
-  removeAllListeners(eventName?: string): this;
-  off: OnEvent<this>;
-  on: OnEvent<this>;
-  once: OnEvent<this>;
-  removeListener: OnEvent<this>;
+  on<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  on<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-  functions: {
-    buyTicket(
-      _eventId: BigNumberish,
-      _quantity: BigNumberish,
-      overrides?: PayableOverrides & { from?: string }
-    ): Promise<ContractTransaction>;
+  once<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  once<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-    createEvent(
+  listeners<TCEvent extends TypedContractEvent>(
+    event: TCEvent
+  ): Promise<Array<TypedListener<TCEvent>>>;
+  listeners(eventName?: string): Promise<Array<Listener>>;
+  removeAllListeners<TCEvent extends TypedContractEvent>(
+    event?: TCEvent
+  ): Promise<this>;
+
+  buyTicket: TypedContractMethod<
+    [_eventId: BigNumberish, _quantity: BigNumberish],
+    [void],
+    "payable"
+  >;
+
+  createEvent: TypedContractMethod<
+    [
       _name: string,
       _description: string,
       _ticketPrice: BigNumberish,
       _totalTickets: BigNumberish,
-      _eventDate: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
+      _eventDate: BigNumberish
+    ],
+    [void],
+    "nonpayable"
+  >;
 
-    eventCount(overrides?: CallOverrides): Promise<[BigNumber]>;
+  eventCount: TypedContractMethod<[], [bigint], "view">;
 
-    events(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        string,
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
+  events: TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
         organizer: string;
         name: string;
         description: string;
-        ticketPrice: BigNumber;
-        totalTickets: BigNumber;
-        ticketsSold: BigNumber;
-        eventDate: BigNumber;
+        ticketPrice: bigint;
+        totalTickets: bigint;
+        ticketsSold: bigint;
+        eventDate: bigint;
         isEventOver: boolean;
       }
-    >;
+    ],
+    "view"
+  >;
 
-    getEventDetails(
-      _eventId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        string,
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
+  getEventDetails: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [
+      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
         organizer: string;
         name: string;
         description: string;
-        ticketPrice: BigNumber;
-        totalTickets: BigNumber;
-        ticketsSold: BigNumber;
-        eventDate: BigNumber;
+        ticketPrice: bigint;
+        totalTickets: bigint;
+        ticketsSold: bigint;
+        eventDate: bigint;
         isEventOver: boolean;
       }
-    >;
-
-    getTicketsOwned(
-      _eventId: BigNumberish,
-      _attendee: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    withdrawFunds(
-      _eventId: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-  };
-
-  buyTicket(
-    _eventId: BigNumberish,
-    _quantity: BigNumberish,
-    overrides?: PayableOverrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  createEvent(
-    _name: string,
-    _description: string,
-    _ticketPrice: BigNumberish,
-    _totalTickets: BigNumberish,
-    _eventDate: BigNumberish,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  eventCount(overrides?: CallOverrides): Promise<BigNumber>;
-
-  events(
-    arg0: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [
-      string,
-      string,
-      string,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      boolean
-    ] & {
-      organizer: string;
-      name: string;
-      description: string;
-      ticketPrice: BigNumber;
-      totalTickets: BigNumber;
-      ticketsSold: BigNumber;
-      eventDate: BigNumber;
-      isEventOver: boolean;
-    }
+    ],
+    "view"
   >;
 
-  getEventDetails(
-    _eventId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [
-      string,
-      string,
-      string,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      boolean
-    ] & {
-      organizer: string;
-      name: string;
-      description: string;
-      ticketPrice: BigNumber;
-      totalTickets: BigNumber;
-      ticketsSold: BigNumber;
-      eventDate: BigNumber;
-      isEventOver: boolean;
-    }
+  getTicketsOwned: TypedContractMethod<
+    [_eventId: BigNumberish, _attendee: AddressLike],
+    [bigint],
+    "view"
   >;
 
-  getTicketsOwned(
-    _eventId: BigNumberish,
-    _attendee: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  owner: TypedContractMethod<[], [string], "view">;
 
-  owner(overrides?: CallOverrides): Promise<string>;
+  withdrawFunds: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
-  withdrawFunds(
-    _eventId: BigNumberish,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
+  getFunction<T extends ContractMethod = ContractMethod>(
+    key: string | FunctionFragment
+  ): T;
 
-  callStatic: {
-    buyTicket(
-      _eventId: BigNumberish,
-      _quantity: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    createEvent(
+  getFunction(
+    nameOrSignature: "buyTicket"
+  ): TypedContractMethod<
+    [_eventId: BigNumberish, _quantity: BigNumberish],
+    [void],
+    "payable"
+  >;
+  getFunction(
+    nameOrSignature: "createEvent"
+  ): TypedContractMethod<
+    [
       _name: string,
       _description: string,
       _ticketPrice: BigNumberish,
       _totalTickets: BigNumberish,
-      _eventDate: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    eventCount(overrides?: CallOverrides): Promise<BigNumber>;
-
-    events(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        string,
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
+      _eventDate: BigNumberish
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "eventCount"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "events"
+  ): TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
         organizer: string;
         name: string;
         description: string;
-        ticketPrice: BigNumber;
-        totalTickets: BigNumber;
-        ticketsSold: BigNumber;
-        eventDate: BigNumber;
+        ticketPrice: bigint;
+        totalTickets: bigint;
+        ticketsSold: bigint;
+        eventDate: bigint;
         isEventOver: boolean;
       }
-    >;
-
-    getEventDetails(
-      _eventId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        string,
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getEventDetails"
+  ): TypedContractMethod<
+    [_eventId: BigNumberish],
+    [
+      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
         organizer: string;
         name: string;
         description: string;
-        ticketPrice: BigNumber;
-        totalTickets: BigNumber;
-        ticketsSold: BigNumber;
-        eventDate: BigNumber;
+        ticketPrice: bigint;
+        totalTickets: bigint;
+        ticketsSold: bigint;
+        eventDate: bigint;
         isEventOver: boolean;
       }
-    >;
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getTicketsOwned"
+  ): TypedContractMethod<
+    [_eventId: BigNumberish, _attendee: AddressLike],
+    [bigint],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "withdrawFunds"
+  ): TypedContractMethod<[_eventId: BigNumberish], [void], "nonpayable">;
 
-    getTicketsOwned(
-      _eventId: BigNumberish,
-      _attendee: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    withdrawFunds(
-      _eventId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-  };
+  getEvent(
+    key: "EventCreated"
+  ): TypedContractEvent<
+    EventCreatedEvent.InputTuple,
+    EventCreatedEvent.OutputTuple,
+    EventCreatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "FundsWithdrawn"
+  ): TypedContractEvent<
+    FundsWithdrawnEvent.InputTuple,
+    FundsWithdrawnEvent.OutputTuple,
+    FundsWithdrawnEvent.OutputObject
+  >;
+  getEvent(
+    key: "TicketPurchased"
+  ): TypedContractEvent<
+    TicketPurchasedEvent.InputTuple,
+    TicketPurchasedEvent.OutputTuple,
+    TicketPurchasedEvent.OutputObject
+  >;
 
   filters: {
-    "EventCreated(uint256,address,string,uint256,uint256,uint256)"(
-      eventId?: null,
-      organizer?: null,
-      name?: null,
-      ticketPrice?: null,
-      totalTickets?: null,
-      eventDate?: null
-    ): EventCreatedEventFilter;
-    EventCreated(
-      eventId?: null,
-      organizer?: null,
-      name?: null,
-      ticketPrice?: null,
-      totalTickets?: null,
-      eventDate?: null
-    ): EventCreatedEventFilter;
+    "EventCreated(uint256,address,string,uint256,uint256,uint256)": TypedContractEvent<
+      EventCreatedEvent.InputTuple,
+      EventCreatedEvent.OutputTuple,
+      EventCreatedEvent.OutputObject
+    >;
+    EventCreated: TypedContractEvent<
+      EventCreatedEvent.InputTuple,
+      EventCreatedEvent.OutputTuple,
+      EventCreatedEvent.OutputObject
+    >;
 
-    "FundsWithdrawn(uint256,address,uint256)"(
-      eventId?: null,
-      organizer?: null,
-      amount?: null
-    ): FundsWithdrawnEventFilter;
-    FundsWithdrawn(
-      eventId?: null,
-      organizer?: null,
-      amount?: null
-    ): FundsWithdrawnEventFilter;
+    "FundsWithdrawn(uint256,address,uint256)": TypedContractEvent<
+      FundsWithdrawnEvent.InputTuple,
+      FundsWithdrawnEvent.OutputTuple,
+      FundsWithdrawnEvent.OutputObject
+    >;
+    FundsWithdrawn: TypedContractEvent<
+      FundsWithdrawnEvent.InputTuple,
+      FundsWithdrawnEvent.OutputTuple,
+      FundsWithdrawnEvent.OutputObject
+    >;
 
-    "TicketPurchased(uint256,address,uint256)"(
-      eventId?: null,
-      attendee?: null,
-      quantity?: null
-    ): TicketPurchasedEventFilter;
-    TicketPurchased(
-      eventId?: null,
-      attendee?: null,
-      quantity?: null
-    ): TicketPurchasedEventFilter;
-  };
-
-  estimateGas: {
-    buyTicket(
-      _eventId: BigNumberish,
-      _quantity: BigNumberish,
-      overrides?: PayableOverrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    createEvent(
-      _name: string,
-      _description: string,
-      _ticketPrice: BigNumberish,
-      _totalTickets: BigNumberish,
-      _eventDate: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    eventCount(overrides?: CallOverrides): Promise<BigNumber>;
-
-    events(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
-
-    getEventDetails(
-      _eventId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getTicketsOwned(
-      _eventId: BigNumberish,
-      _attendee: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    withdrawFunds(
-      _eventId: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-  };
-
-  populateTransaction: {
-    buyTicket(
-      _eventId: BigNumberish,
-      _quantity: BigNumberish,
-      overrides?: PayableOverrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    createEvent(
-      _name: string,
-      _description: string,
-      _ticketPrice: BigNumberish,
-      _totalTickets: BigNumberish,
-      _eventDate: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    eventCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    events(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getEventDetails(
-      _eventId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getTicketsOwned(
-      _eventId: BigNumberish,
-      _attendee: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    withdrawFunds(
-      _eventId: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
+    "TicketPurchased(uint256,address,uint256)": TypedContractEvent<
+      TicketPurchasedEvent.InputTuple,
+      TicketPurchasedEvent.OutputTuple,
+      TicketPurchasedEvent.OutputObject
+    >;
+    TicketPurchased: TypedContractEvent<
+      TicketPurchasedEvent.InputTuple,
+      TicketPurchasedEvent.OutputTuple,
+      TicketPurchasedEvent.OutputObject
+    >;
   };
 }

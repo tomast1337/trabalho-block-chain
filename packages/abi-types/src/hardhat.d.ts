@@ -4,9 +4,10 @@
 
 import { ethers } from "ethers";
 import {
+  DeployContractOptions,
   FactoryOptions,
   HardhatEthersHelpers as HardhatEthersHelpersBase,
-} from "@nomiclabs/hardhat-ethers/types";
+} from "@nomicfoundation/hardhat-ethers/types";
 
 import * as Contracts from ".";
 
@@ -23,13 +24,33 @@ declare module "hardhat/types/runtime" {
 
     getContractAt(
       name: "EventTicketing",
-      address: string,
+      address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.EventTicketing>;
     getContractAt(
       name: "Lock",
-      address: string,
+      address: string | ethers.Addressable,
       signer?: ethers.Signer
+    ): Promise<Contracts.Lock>;
+
+    deployContract(
+      name: "EventTicketing",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.EventTicketing>;
+    deployContract(
+      name: "Lock",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Lock>;
+
+    deployContract(
+      name: "EventTicketing",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.EventTicketing>;
+    deployContract(
+      name: "Lock",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Lock>;
 
     // default types
@@ -39,13 +60,22 @@ declare module "hardhat/types/runtime" {
     ): Promise<ethers.ContractFactory>;
     getContractFactory(
       abi: any[],
-      bytecode: ethers.utils.BytesLike,
+      bytecode: ethers.BytesLike,
       signer?: ethers.Signer
     ): Promise<ethers.ContractFactory>;
     getContractAt(
       nameOrAbi: string | any[],
-      address: string,
+      address: string | ethers.Addressable,
       signer?: ethers.Signer
+    ): Promise<ethers.Contract>;
+    deployContract(
+      name: string,
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<ethers.Contract>;
+    deployContract(
+      name: string,
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<ethers.Contract>;
   }
 }

@@ -9,7 +9,7 @@ const config: HardhatUserConfig = {
   solidity: "0.8.28",
   typechain: {
     outDir: "../abi-types/src",
-    target: "ethers-v5",
+    target: "ethers-v6",
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",

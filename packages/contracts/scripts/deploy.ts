@@ -4,9 +4,11 @@ async function main() {
   const EventTicketing = await ethers.getContractFactory("EventTicketing");
   const eventTicketing = await EventTicketing.deploy();
 
-  await eventTicketing.deployed();
+  await eventTicketing.waitForDeployment();
 
-  console.log(`EventTicketing deployed to: ${eventTicketing.address}`);
+  console.log(
+    `EventTicketing deployed to: ${await eventTicketing.getAddress()}`
+  );
 }
 
 main().catch((error) => {

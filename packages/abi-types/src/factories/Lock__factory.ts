@@ -2,14 +2,18 @@
 /* tslint:disable */
 /* eslint-disable */
 import {
-  Signer,
-  utils,
   Contract,
   ContractFactory,
-  PayableOverrides,
-  BigNumberish,
+  ContractTransactionResponse,
+  Interface,
 } from "ethers";
-import type { Provider, TransactionRequest } from "@ethersproject/providers";
+import type {
+  Signer,
+  BigNumberish,
+  ContractDeployTransaction,
+  ContractRunner,
+} from "ethers";
+import type { PayableOverrides } from "../common";
 import type { Lock, LockInterface } from "../Lock";
 
 const _abi = [
@@ -98,31 +102,32 @@ export class Lock__factory extends ContractFactory {
     }
   }
 
-  override deploy(
-    _unlockTime: BigNumberish,
-    overrides?: PayableOverrides & { from?: string }
-  ): Promise<Lock> {
-    return super.deploy(_unlockTime, overrides || {}) as Promise<Lock>;
-  }
   override getDeployTransaction(
     _unlockTime: BigNumberish,
     overrides?: PayableOverrides & { from?: string }
-  ): TransactionRequest {
+  ): Promise<ContractDeployTransaction> {
     return super.getDeployTransaction(_unlockTime, overrides || {});
   }
-  override attach(address: string): Lock {
-    return super.attach(address) as Lock;
+  override deploy(
+    _unlockTime: BigNumberish,
+    overrides?: PayableOverrides & { from?: string }
+  ) {
+    return super.deploy(_unlockTime, overrides || {}) as Promise<
+      Lock & {
+        deploymentTransaction(): ContractTransactionResponse;
+      }
+    >;
   }
-  override connect(signer: Signer): Lock__factory {
-    return super.connect(signer) as Lock__factory;
+  override connect(runner: ContractRunner | null): Lock__factory {
+    return super.connect(runner) as Lock__factory;
   }
 
   static readonly bytecode = _bytecode;
   static readonly abi = _abi;
   static createInterface(): LockInterface {
-    return new utils.Interface(_abi) as LockInterface;
+    return new Interface(_abi) as LockInterface;
   }
-  static connect(address: string, signerOrProvider: Signer | Provider): Lock {
-    return new Contract(address, _abi, signerOrProvider) as Lock;
+  static connect(address: string, runner?: ContractRunner | null): Lock {
+    return new Contract(address, _abi, runner) as unknown as Lock;
   }
 }
