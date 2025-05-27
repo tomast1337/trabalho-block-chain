@@ -1,0 +1,25 @@
+{
+  "name": "event-ticketing-contract",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@typechain/ethers-v5": "^11.1.2",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/bun": "latest",
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.23",
+    "chai": "^5.2.0",
+    "ethers": "^6.14.3",
+    "hardhat": "^2.24.1",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
