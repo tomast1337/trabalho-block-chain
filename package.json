@@ -1,16 +1,17 @@
 {
-  "name": "trabalhoblcokchain",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "name": "trabalho-block-chain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm --parallel --stream dev",
+    "build": "pnpm --filter \"./apps/frontend\" build",
+    "chain": "pnpm --filter \"./packages/contracts\" chain",
+    "compile": "pnpm --filter \"./packages/contracts\" compile",
+    "test": "pnpm --filter \"./packages/contracts\" test"
   },
-  "workspaces": [
-    "dapp",
-    "event-ticketing-contract"
-  ],
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
 }
