@@ -131,7 +131,7 @@ describe("EventTicketing", () => {
     });
   });
 
-  describe("Ticket Purchasing", function () {
+  describe("Ticket Purchasing", () => {
     const deployWithEventFixture = async () => {
       const fixture = await deployEventTicketingFixture();
       const {
@@ -178,7 +178,7 @@ describe("EventTicketing", () => {
       const eventDetails = await eventTicketing.getEventDetails(eventId);
       expect(eventDetails.ticketsSold).to.equal(quantity);
     });
-    it("Should revert if event doesn't exist", async function () {
+    it("Should revert if event doesn't exist", async () => {
       const { eventTicketing, attendee, TICKET_PRICE } = await loadFixture(
         deployWithEventFixture
       );
@@ -189,7 +189,7 @@ describe("EventTicketing", () => {
       ).to.be.revertedWith("Event does not exist");
     });
 
-    it("Should revert if event has already started", async function () {
+    it("Should revert if event has already started", async () => {
       const { eventTicketing, attendee, eventId, TICKET_PRICE, eventDate } =
         await loadFixture(deployWithEventFixture);
       await time.increaseTo(eventDate);
@@ -201,7 +201,7 @@ describe("EventTicketing", () => {
       ).to.be.revertedWith("Event has already started or ended");
     });
 
-    it("Should revert if not enough tickets available", async function () {
+    it("Should revert if not enough tickets available", async () => {
       const { eventTicketing, attendee, eventId, TICKET_PRICE, TOTAL_TICKETS } =
         await loadFixture(deployWithEventFixture);
       const tooManyTickets = TOTAL_TICKETS + 1;
@@ -213,7 +213,7 @@ describe("EventTicketing", () => {
       ).to.be.revertedWith("Not enough tickets available");
     });
 
-    it("Should revert if incorrect Ether amount is sent", async function () {
+    it("Should revert if incorrect Ether amount is sent", async () => {
       const { eventTicketing, attendee, eventId, TICKET_PRICE } =
         await loadFixture(deployWithEventFixture);
       const incorrectAmount = TICKET_PRICE - hre.ethers.parseEther("0.01");
@@ -225,7 +225,7 @@ describe("EventTicketing", () => {
       ).to.be.revertedWith("Incorrect Ether amount sent");
     });
 
-    it("Should revert if event is already over", async function () {
+    it("Should revert if event is already over", async () => {
       const {
         eventTicketing,
         organizer,
@@ -253,6 +253,105 @@ describe("EventTicketing", () => {
           .connect(attendee)
           .buyTicket(eventId, 1, { value: TICKET_PRICE })
       ).to.be.revertedWith("Event is already over");
+    });
+  });
+
+  describe("Funds Withdrawal", () => {
+    const deployWithEventFixture = async () => {
+      const fixture = await deployEventTicketingFixture();
+      const {
+        eventTicketing,
+        organizer,
+        eventDate,
+        TICKET_PRICE,
+        TOTAL_TICKETS,
+      } = fixture;
+
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Test Event",
+          "Test Description",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          eventDate
+        );
+
+      return { ...fixture, eventId: 1 };
+    };
+    async function deployWithPurchasedTicketsFixture() {
+      const fixture = await deployWithEventFixture();
+      const { eventTicketing, attendee, eventId, TICKET_PRICE } = fixture;
+
+      const quantity = 5;
+      await eventTicketing.connect(attendee).buyTicket(eventId, quantity, {
+        value: TICKET_PRICE * BigInt(quantity),
+      });
+
+      return { ...fixture, quantity };
+    }
+
+    it("Should allow organizer to withdraw funds after event", async () => {
+      const {
+        eventTicketing,
+        organizer,
+        attendee,
+        eventId,
+        TICKET_PRICE,
+        quantity,
+        eventDate,
+      } = await loadFixture(deployWithPurchasedTicketsFixture);
+      const expectedAmount = TICKET_PRICE * BigInt(quantity);
+
+      await time.increaseTo(eventDate);
+
+      await expect(eventTicketing.connect(organizer).withdrawFunds(eventId))
+        .to.emit(eventTicketing, "FundsWithdrawn")
+        .withArgs(eventId, organizer.address, expectedAmount);
+
+      const eventDetails = await eventTicketing.getEventDetails(eventId);
+      expect(eventDetails.isEventOver).to.equal(true);
+    });
+
+    it("Should revert if not called by organizer", async () => {
+      const { eventTicketing, otherAccount, eventId, eventDate } =
+        await loadFixture(deployWithPurchasedTicketsFixture);
+      await time.increaseTo(eventDate);
+
+      await expect(
+        eventTicketing.connect(otherAccount).withdrawFunds(eventId)
+      ).to.be.revertedWith("Only organizer can call this function");
+    });
+
+    it("Should revert if event hasn't occurred yet", async () => {
+      const { eventTicketing, organizer, eventId } = await loadFixture(
+        deployWithPurchasedTicketsFixture
+      );
+
+      await expect(
+        eventTicketing.connect(organizer).withdrawFunds(eventId)
+      ).to.be.revertedWith("Event has not occurred yet");
+    });
+
+    it("Should revert if funds already withdrawn", async () => {
+      const { eventTicketing, organizer, eventId, eventDate } =
+        await loadFixture(deployWithPurchasedTicketsFixture);
+      await time.increaseTo(eventDate);
+      await eventTicketing.connect(organizer).withdrawFunds(eventId);
+
+      await expect(
+        eventTicketing.connect(organizer).withdrawFunds(eventId)
+      ).to.be.revertedWith("Funds already withdrawn");
+    });
+
+    it("Should revert if no tickets were sold", async () => {
+      const { eventTicketing, organizer, eventId, eventDate } =
+        await loadFixture(deployWithEventFixture);
+      await time.increaseTo(eventDate);
+
+      await expect(
+        eventTicketing.connect(organizer).withdrawFunds(eventId)
+      ).to.be.revertedWith("No funds to withdraw");
     });
   });
 
