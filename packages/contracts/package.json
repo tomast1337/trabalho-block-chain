@@ -23,12 +23,14 @@
   "license": "ISC",
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.3.0",
     "@typechain/ethers-v6": "0.5.1",
     "@typechain/hardhat": "^9.1.0",
     "dotenv": "^16.5.0",
     "hardhat": "^2.24.1",
+    "hardhat-chai-matchers": "link:@nomicfoundation/hardhat-chai-matchers",
     "hardhat-gas-reporter": "^2.2.3",
     "solidity-coverage": "^0.8.16",
     "typechain": "^8.3.2"
