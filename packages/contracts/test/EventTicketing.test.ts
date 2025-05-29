@@ -234,9 +234,20 @@ describe("EventTicketing", () => {
         TICKET_PRICE,
         eventDate,
       } = await loadFixture(deployWithEventFixture);
+
+      // First purchase some tickets
+      const quantity = 2;
+      await eventTicketing.connect(attendee).buyTicket(eventId, quantity, {
+        value: TICKET_PRICE * BigInt(quantity),
+      });
+
+      // Move time forward to after the event
       await time.increaseTo(eventDate);
+
+      // Withdraw funds (marking event as over)
       await eventTicketing.connect(organizer).withdrawFunds(eventId);
 
+      // Now try to buy tickets for the already-over event
       await expect(
         eventTicketing
           .connect(attendee)
