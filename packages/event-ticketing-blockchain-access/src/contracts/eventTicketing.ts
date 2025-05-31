@@ -1,5 +1,8 @@
 import { Contract } from "ethers";
-import { EventTicketing } from "@abi-types/EventTicketing";
+import {
+  EventTicketing,
+  EventTicketing__factory,
+} from "../../../abi-types/src/index";
 import { getSigner } from "../providers/web3Provider";
 
 const CONTRACT_ADDRESS =
@@ -8,9 +11,11 @@ const CONTRACT_ADDRESS =
 
 export async function getEventTicketingContract(): Promise<EventTicketing> {
   const signer = await getSigner();
-  return new Contract(
-    CONTRACT_ADDRESS,
-    EventTicketing.abi,
-    signer
-  ) as unknown as EventTicketing;
+  if (!signer) {
+    throw new Error("Signer is not available");
+  }
+
+  const contract = EventTicketing__factory.connect(CONTRACT_ADDRESS, signer);
+
+  return contract;
 }
