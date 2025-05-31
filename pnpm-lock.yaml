@@ -189,7 +189,7 @@ importers:
 
   packages/event-ticketing-blockchain-access:
     dependencies:
-      abi-types:
+      '@event_ticketing/abi-types':
         specifier: workspace:*
         version: link:../abi-types
       ethers:

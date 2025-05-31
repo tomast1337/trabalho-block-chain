@@ -1,5 +1,5 @@
 {
-  "name": "event-ticketing-blockchain-access",
+  "name": "@event_ticketing/blockchain-access",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,7 +13,7 @@
   "dependencies": {
     "ethers": "^6.14.3",
     "react": "^19.1.0",
-    "abi-types": "workspace:*"
+    "@event_ticketing/abi-types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.23",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { EventTicketing } from "../../../abi-types/src/index";
+import { EventTicketing } from "@event_ticketing/abi-types";
 import { getEventTicketingContract } from "../contracts/eventTicketing";
 
 export function useEventTicketing() {

@@ -1,8 +1,7 @@
-import { Contract } from "ethers";
 import {
   EventTicketing,
   EventTicketing__factory,
-} from "../../../abi-types/src/index";
+} from "@event_ticketing/abi-types";
 import { getSigner } from "../providers/web3Provider";
 
 const CONTRACT_ADDRESS =
