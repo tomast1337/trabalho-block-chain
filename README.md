@@ -5,12 +5,13 @@
 ```
 (This Repo)/
 ├── apps/
-│   └── frontend/          # React frontend with Tailwind CSS and shadcn/ui
+│   └── frontend/                                       # React frontend with Tailwind CSS and shadcn/ui
 ├── packages/
-│   ├── contracts/         # Hardhat project with Solidity smart contracts
-│   └── abi-types/         # Generated contract ABIs and TypeChain types
-├── pnpm-workspace.yaml    # PNPM workspace configuration
-└── README.md              # This file
+│   ├── contracts/                                      # Hardhat project with Solidity smart contracts
+│   ├── abi-types/                                      # Generated contract ABIs and TypeChain types
+│   └── event-ticketing-blockchain-access/              # Shared utility functions
+├── pnpm-workspace.yaml                                 # PNPM workspace configuration
+└── README.md                                           # This file
 ```
 
 ## Installation
