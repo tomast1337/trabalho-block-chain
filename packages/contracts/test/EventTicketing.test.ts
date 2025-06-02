@@ -1,10 +1,9 @@
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import type { EventTicketing } from "@abi-types/EventTicketing";
+import type { EventTicketing } from "@event_ticketing/abi-types";
 import {
-  time,
   loadFixture,
+  time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { expect } from "chai";
 import hre from "hardhat";
 
 describe("EventTicketing", () => {
