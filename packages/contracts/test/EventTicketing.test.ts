@@ -1,16 +1,16 @@
-import type { EventTicketing } from "@event_ticketing/abi-types";
+import type { EventTicketing, MockUSDC } from "@event_ticketing/abi-types";
 import {
   loadFixture,
   time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 
 describe("EventTicketing", () => {
   // We define a fixture to reuse the same setup in every test
   const deployEventTicketingFixture = async () => {
     const ONE_DAY_IN_SECS = 24 * 60 * 60;
-    const TICKET_PRICE = hre.ethers.parseEther("0.1");
+    const TICKET_PRICE = ethers.parseUnits("10", 6); // 10 USDC (6 decimals)
     const TOTAL_TICKETS = 100;
     const eventDate = (await time.latest()) + ONE_DAY_IN_SECS;
 
@@ -18,13 +18,23 @@ describe("EventTicketing", () => {
     const [owner, organizer, attendee, otherAccount] =
       await hre.ethers.getSigners();
 
+    // Deploy mock USDC token
+    const USDC = await hre.ethers.getContractFactory("MockUSDC");
+    const usdc = await USDC.deploy();
+
     const EventTicketing = await hre.ethers.getContractFactory(
       "EventTicketing"
     );
-    const eventTicketing = await EventTicketing.deploy();
+    const eventTicketing = await EventTicketing.deploy(await usdc.getAddress());
+
+    // Distribute USDC to test accounts
+    await usdc.transfer(organizer.address, ethers.parseUnits("1000", 6));
+    await usdc.transfer(attendee.address, ethers.parseUnits("1000", 6));
+    await usdc.transfer(otherAccount.address, ethers.parseUnits("1000", 6));
 
     return {
       eventTicketing: eventTicketing as unknown as EventTicketing,
+      usdc: usdc as unknown as MockUSDC,
       owner,
       organizer,
       attendee,
@@ -155,15 +165,15 @@ describe("EventTicketing", () => {
     };
 
     it("Should allow purchasing tickets with correct payment", async () => {
-      const { eventTicketing, attendee, eventId, TICKET_PRICE } =
+      const { eventTicketing, usdc, attendee, eventId, TICKET_PRICE } =
         await loadFixture(deployWithEventFixture);
       const quantity = 2;
       const totalPrice = TICKET_PRICE * BigInt(quantity);
 
+      await usdc.connect(attendee).approve(eventTicketing.target, totalPrice);
+
       await expect(
-        eventTicketing
-          .connect(attendee)
-          .buyTicket(eventId, quantity, { value: totalPrice })
+        eventTicketing.connect(attendee).buyTicket(eventId, quantity)
       )
         .to.emit(eventTicketing, "TicketPurchased")
         .withArgs(eventId, attendee.address, quantity);
@@ -176,15 +186,14 @@ describe("EventTicketing", () => {
 
       const eventDetails = await eventTicketing.getEventDetails(eventId);
       expect(eventDetails.ticketsSold).to.equal(quantity);
+      expect(await usdc.balanceOf(eventTicketing.target)).to.equal(totalPrice);
     });
     it("Should revert if event doesn't exist", async () => {
       const { eventTicketing, attendee, TICKET_PRICE } = await loadFixture(
         deployWithEventFixture
       );
       await expect(
-        eventTicketing
-          .connect(attendee)
-          .buyTicket(999, 1, { value: TICKET_PRICE })
+        eventTicketing.connect(attendee).buyTicket(999, 1)
       ).to.be.revertedWith("Event does not exist");
     });
 
@@ -194,9 +203,7 @@ describe("EventTicketing", () => {
       await time.increaseTo(eventDate);
 
       await expect(
-        eventTicketing
-          .connect(attendee)
-          .buyTicket(eventId, 1, { value: TICKET_PRICE })
+        eventTicketing.connect(attendee).buyTicket(eventId, 1)
       ).to.be.revertedWith("Event has already started or ended");
     });
 
@@ -206,27 +213,26 @@ describe("EventTicketing", () => {
       const tooManyTickets = TOTAL_TICKETS + 1;
 
       await expect(
-        eventTicketing.connect(attendee).buyTicket(eventId, tooManyTickets, {
-          value: TICKET_PRICE * BigInt(tooManyTickets),
-        })
+        eventTicketing.connect(attendee).buyTicket(eventId, tooManyTickets)
       ).to.be.revertedWith("Not enough tickets available");
     });
 
-    it("Should revert if incorrect Ether amount is sent", async () => {
-      const { eventTicketing, attendee, eventId, TICKET_PRICE } =
+    it("Should revert if payment is insufficient", async () => {
+      const { eventTicketing, usdc, attendee, eventId, TICKET_PRICE } =
         await loadFixture(deployWithEventFixture);
-      const incorrectAmount = TICKET_PRICE - hre.ethers.parseEther("0.01");
-
+      const insufficientPayment = TICKET_PRICE - BigInt(1);
+      await usdc
+        .connect(attendee)
+        .approve(eventTicketing.target, insufficientPayment);
       await expect(
-        eventTicketing
-          .connect(attendee)
-          .buyTicket(eventId, 1, { value: incorrectAmount })
-      ).to.be.revertedWith("Incorrect Ether amount sent");
+        eventTicketing.connect(attendee).buyTicket(eventId, 1)
+      ).to.be.revertedWith("Insufficient USDC allowance");
     });
 
     it("Should revert if event is already over", async () => {
       const {
         eventTicketing,
+        usdc,
         organizer,
         attendee,
         eventId,
@@ -234,23 +240,20 @@ describe("EventTicketing", () => {
         eventDate,
       } = await loadFixture(deployWithEventFixture);
 
-      // First purchase some tickets
+      // Purchase some tickets
       const quantity = 2;
-      await eventTicketing.connect(attendee).buyTicket(eventId, quantity, {
-        value: TICKET_PRICE * BigInt(quantity),
-      });
+      const totalPrice = TICKET_PRICE * BigInt(quantity);
+      await usdc.connect(attendee).approve(eventTicketing.target, totalPrice);
+      await eventTicketing.connect(attendee).buyTicket(eventId, quantity);
 
-      // Move time forward to after the event
+      // Move time forward to after the event and withdraw funds
       await time.increaseTo(eventDate);
-
-      // Withdraw funds (marking event as over)
       await eventTicketing.connect(organizer).withdrawFunds(eventId);
 
-      // Now try to buy tickets for the already-over event
+      // Try to buy tickets after event is over
+      await usdc.connect(attendee).approve(eventTicketing.target, TICKET_PRICE);
       await expect(
-        eventTicketing
-          .connect(attendee)
-          .buyTicket(eventId, 1, { value: TICKET_PRICE })
+        eventTicketing.connect(attendee).buyTicket(eventId, 1)
       ).to.be.revertedWith("Event is already over");
     });
   });
@@ -280,12 +283,14 @@ describe("EventTicketing", () => {
     };
     async function deployWithPurchasedTicketsFixture() {
       const fixture = await deployWithEventFixture();
-      const { eventTicketing, attendee, eventId, TICKET_PRICE } = fixture;
+      const { eventTicketing, attendee, eventId, TICKET_PRICE, usdc } = fixture;
 
       const quantity = 5;
-      await eventTicketing.connect(attendee).buyTicket(eventId, quantity, {
-        value: TICKET_PRICE * BigInt(quantity),
-      });
+      await usdc
+        .connect(attendee)
+        .approve(eventTicketing.target, TICKET_PRICE * BigInt(quantity));
+      // Purchase tickets
+      await eventTicketing.connect(attendee).buyTicket(eventId, quantity);
 
       return { ...fixture, quantity };
     }
@@ -293,8 +298,8 @@ describe("EventTicketing", () => {
     it("Should allow organizer to withdraw funds after event", async () => {
       const {
         eventTicketing,
+        usdc,
         organizer,
-        attendee,
         eventId,
         TICKET_PRICE,
         quantity,
@@ -304,16 +309,22 @@ describe("EventTicketing", () => {
 
       await time.increaseTo(eventDate);
 
+      const organizerBalanceBefore = await usdc.balanceOf(organizer.address);
       await expect(eventTicketing.connect(organizer).withdrawFunds(eventId))
         .to.emit(eventTicketing, "FundsWithdrawn")
         .withArgs(eventId, organizer.address, expectedAmount);
+      const organizerBalanceAfter = await usdc.balanceOf(organizer.address);
 
       const eventDetails = await eventTicketing.getEventDetails(eventId);
       expect(eventDetails.isEventOver).to.equal(true);
+      expect(organizerBalanceAfter - organizerBalanceBefore).to.equal(
+        expectedAmount
+      );
+      expect(await usdc.balanceOf(eventTicketing.target)).to.equal(0);
     });
 
     it("Should revert if not called by organizer", async () => {
-      const { eventTicketing, otherAccount, eventId, eventDate } =
+      const { eventTicketing, usdc, otherAccount, eventId, eventDate } =
         await loadFixture(deployWithPurchasedTicketsFixture);
       await time.increaseTo(eventDate);
 

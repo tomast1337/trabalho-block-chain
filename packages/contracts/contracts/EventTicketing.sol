@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 contract EventTicketing {
+    using SafeERC20 for IERC20;
+
     address public owner;
+    IERC20 public usdcToken;
 
     struct Event {
         address organizer;
@@ -56,8 +62,9 @@ contract EventTicketing {
         _;
     }
 
-    constructor() {
+    constructor(address _usdcAddress) {
         owner = msg.sender;
+        usdcToken = IERC20(_usdcAddress);
     }
 
     function createEvent(
@@ -98,7 +105,7 @@ contract EventTicketing {
     function buyTicket(
         uint256 _eventId,
         uint256 _quantity
-    ) external payable eventExists(_eventId) eventNotOver(_eventId) {
+    ) external eventExists(_eventId) eventNotOver(_eventId) {
         Event storage eventToBuy = events[_eventId];
 
         require(
@@ -109,10 +116,18 @@ contract EventTicketing {
             eventToBuy.ticketsSold + _quantity <= eventToBuy.totalTickets,
             "Not enough tickets available"
         );
+
+        uint256 totalPrice = eventToBuy.ticketPrice * _quantity;
         require(
-            msg.value == eventToBuy.ticketPrice * _quantity,
-            "Incorrect Ether amount sent"
+            usdcToken.balanceOf(msg.sender) >= totalPrice,
+            "Insufficient USDC balance"
         );
+        require(
+            usdcToken.allowance(msg.sender, address(this)) >= totalPrice,
+            "Insufficient USDC allowance"
+        );
+
+        usdcToken.safeTransferFrom(msg.sender, address(this), totalPrice);
 
         eventToBuy.ticketsSold += _quantity;
         eventToBuy.attendees[msg.sender] += _quantity;
@@ -137,10 +152,7 @@ contract EventTicketing {
 
         eventToWithdraw.isEventOver = true;
 
-        (bool success, ) = payable(eventToWithdraw.organizer).call{
-            value: balance
-        }("");
-        require(success, "Transfer failed");
+        usdcToken.safeTransfer(eventToWithdraw.organizer, balance);
 
         emit FundsWithdrawn(_eventId, eventToWithdraw.organizer, balance);
     }
@@ -182,7 +194,6 @@ contract EventTicketing {
         return events[_eventId].attendees[_attendee];
     }
 
-    // Fallback function to prevent accidental Ether transfers
     receive() external payable {
         revert("Direct Ether transfers not allowed. Use buyTicket function.");
     }
