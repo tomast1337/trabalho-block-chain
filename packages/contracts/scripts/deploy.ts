@@ -3,11 +3,11 @@ import { ethers } from "hardhat";
 async function main() {
   const MockUSDC = await ethers.getContractFactory("MockUSDC");
   const usdc = await MockUSDC.deploy();
-  await usdc.deployed();
-  console.log(`MockUSDC deployed to: ${usdc.address}`);
+  await usdc.waitForDeployment();
+  console.log(`MockUSDC deployed to: ${await usdc.getAddress()}`);
 
   const EventTicketing = await ethers.getContractFactory("EventTicketing");
-  const eventTicketing = await EventTicketing.deploy();
+  const eventTicketing = await EventTicketing.deploy(await usdc.getAddress());
   await eventTicketing.waitForDeployment();
 
   console.log(
