@@ -3,8 +3,12 @@ import {
   EventTicketing__factory,
 } from "@event_ticketing/abi-types";
 import { getSigner } from "../providers/web3Provider";
+import { ethers } from "ethers";
 
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Default address for local development
+// Default address for local development
+const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+// USDT contract address (replace with actual USDT address for each network)
+const USDT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 export async function getEventTicketingContract(): Promise<EventTicketing> {
   const signer = await getSigner();
@@ -13,6 +17,28 @@ export async function getEventTicketingContract(): Promise<EventTicketing> {
   }
 
   const contract = EventTicketing__factory.connect(CONTRACT_ADDRESS, signer);
-
   return contract;
+}
+
+// Additional function to get USDT contract instance
+export async function getUsdtContract(): Promise<ERC20> {
+  const signer = await getSigner();
+  if (!signer) {
+    throw new Error("Signer is not available");
+  }
+
+  // ERC20 ABI - you might want to import this from a shared location
+  const erc20Abi = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+  ];
+
+  return new ethers.Contract(
+    USDT_ADDRESS,
+    erc20Abi,
+    signer
+  ) as unknown as ERC20;
 }
