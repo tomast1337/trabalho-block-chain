@@ -4,6 +4,7 @@ import { Home } from "../pages/Home";
 import { NotFound } from "../pages/NotFound";
 import { LoadingPage } from "@/pages/Loading";
 import { ContractError } from "@/pages/ContractError";
+import { Wallet } from "@/pages/Wallet";
 
 type MainContentProps = {
   loading: boolean;
@@ -19,6 +20,8 @@ export function MainContent({ loading, error }: MainContentProps) {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
+        <Route path="/wallet" element={<Wallet />} />
+        {/* Add more routes as needed */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </main>
