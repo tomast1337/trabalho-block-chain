@@ -365,6 +365,278 @@ describe("EventTicketing", () => {
     });
   });
 
+  describe("Ticket Query Functions", () => {
+    const deployWithMultipleEventsFixture = async () => {
+      const fixture = await deployEventTicketingFixture();
+      const {
+        eventTicketing,
+        organizer,
+        eventDate,
+        TICKET_PRICE,
+        TOTAL_TICKETS,
+        usdc,
+        attendee,
+      } = fixture;
+
+      // Create 3 test events
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Event 1",
+          "Description 1",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          eventDate
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Event 2",
+          "Description 2",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          eventDate + 86400
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Event 3",
+          "Description 3",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          eventDate + 172800
+        );
+
+      // Approve USDC for all purchases
+      await usdc.connect(attendee).approve(
+        eventTicketing.target,
+        TICKET_PRICE * 10n // Enough for all test purchases
+      );
+
+      return { ...fixture };
+    };
+
+    describe("getTicketsOwned", () => {
+      const deployWithEventFixture = async () => {
+        const fixture = await deployEventTicketingFixture();
+        const {
+          eventTicketing,
+          organizer,
+          eventDate,
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+        } = fixture;
+
+        await eventTicketing
+          .connect(organizer)
+          .createEvent(
+            "Test Event",
+            "Test Description",
+            TICKET_PRICE,
+            TOTAL_TICKETS,
+            eventDate
+          );
+
+        return { ...fixture, eventId: 1 };
+      };
+      it("Should return 0 for address with no tickets", async () => {
+        const { eventTicketing, otherAccount, eventId } = await loadFixture(
+          deployWithEventFixture
+        );
+
+        const tickets = await eventTicketing.getTicketsOwned(
+          eventId,
+          otherAccount.address
+        );
+        expect(tickets).to.equal(0);
+      });
+
+      it("Should return correct ticket count for specific event", async () => {
+        const { eventTicketing, attendee, eventId, usdc, TICKET_PRICE } =
+          await loadFixture(deployWithEventFixture);
+
+        const quantity = 3;
+        await eventTicketing.connect(attendee).buyTicket(eventId, quantity);
+
+        const tickets = await eventTicketing.getTicketsOwned(
+          eventId,
+          attendee.address
+        );
+        expect(tickets).to.equal(quantity);
+      });
+    });
+
+    describe("getAttendedEventsPaginated", () => {
+      it("Should return empty arrays for address with no tickets", async () => {
+        const { eventTicketing, otherAccount } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const [eventIds, ticketCounts, total] =
+          await eventTicketing.getAttendedEventsPaginated(
+            otherAccount.address,
+            0,
+            10
+          );
+
+        expect(eventIds).to.have.lengthOf(0);
+        expect(ticketCounts).to.have.lengthOf(0);
+        expect(total).to.equal(3);
+      });
+
+      it("Should return correct events and counts for attendee", async () => {
+        const { eventTicketing, attendee, usdc } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // Buy tickets for event 1 and 3
+        await eventTicketing.connect(attendee).buyTicket(1, 2);
+        await eventTicketing.connect(attendee).buyTicket(3, 1);
+
+        const [eventIds, ticketCounts, total] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            0,
+            10
+          );
+
+        expect(eventIds).to.have.lengthOf(2);
+        expect(ticketCounts).to.have.lengthOf(2);
+        expect(total).to.equal(3);
+
+        // Results should be in event ID order
+        expect(eventIds[0]).to.equal(1);
+        expect(ticketCounts[0]).to.equal(2);
+        expect(eventIds[1]).to.equal(3);
+        expect(ticketCounts[1]).to.equal(1);
+      });
+
+      it("Should handle pagination correctly", async () => {
+        const { eventTicketing, attendee } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // Buy tickets for all 3 events
+        await eventTicketing.connect(attendee).buyTicket(1, 1);
+        await eventTicketing.connect(attendee).buyTicket(2, 2);
+        await eventTicketing.connect(attendee).buyTicket(3, 3);
+
+        // First page (2 items)
+        const [page1Ids, page1Counts, total] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            0,
+            2
+          );
+
+        expect(page1Ids).to.have.lengthOf(2);
+        expect(page1Counts).to.have.lengthOf(2);
+        expect(total).to.equal(3);
+        expect(page1Ids[0]).to.equal(1);
+        expect(page1Counts[0]).to.equal(1);
+        expect(page1Ids[1]).to.equal(2);
+        expect(page1Counts[1]).to.equal(2);
+
+        // Second page (1 item)
+        const [page2Ids, page2Counts] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            1,
+            2
+          );
+
+        expect(page2Ids).to.have.lengthOf(1);
+        expect(page2Counts).to.have.lengthOf(1);
+        expect(page2Ids[0]).to.equal(3);
+        expect(page2Counts[0]).to.equal(3);
+      });
+
+      it("Should return empty arrays for out-of-bounds pages", async () => {
+        const { eventTicketing, attendee } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        await eventTicketing.connect(attendee).buyTicket(1, 1);
+
+        const [eventIds, ticketCounts] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            1,
+            10
+          );
+
+        expect(eventIds).to.have.lengthOf(0);
+        expect(ticketCounts).to.have.lengthOf(0);
+      });
+
+      it("Should return partial results for partial pages", async () => {
+        const { eventTicketing, attendee } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        await eventTicketing.connect(attendee).buyTicket(1, 1);
+        await eventTicketing.connect(attendee).buyTicket(2, 1);
+
+        const [eventIds, ticketCounts] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            0,
+            1
+          );
+
+        expect(eventIds).to.have.lengthOf(1);
+        expect(ticketCounts).to.have.lengthOf(1);
+        expect(eventIds[0]).to.equal(1);
+      });
+    });
+
+    describe("Edge Cases", () => {
+      it("Should work correctly with many events", async () => {
+        const {
+          eventTicketing,
+          organizer,
+          eventDate,
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          attendee,
+        } = await loadFixture(deployEventTicketingFixture);
+
+        // Create 20 events
+        for (let i = 0; i < 20; i++) {
+          await eventTicketing
+            .connect(organizer)
+            .createEvent(
+              `Event ${i}`,
+              `Description ${i}`,
+              TICKET_PRICE,
+              TOTAL_TICKETS,
+              eventDate + i * 86400
+            );
+        }
+
+        // Buy tickets for odd-numbered events
+        for (let i = 1; i <= 20; i += 2) {
+          await eventTicketing.connect(attendee).buyTicket(i, i);
+        }
+
+        // Get paginated results
+        const [eventIds, ticketCounts, total] =
+          await eventTicketing.getAttendedEventsPaginated(
+            attendee.address,
+            1,
+            5
+          );
+
+        expect(eventIds).to.have.lengthOf(5);
+        expect(total).to.equal(20);
+        expect(eventIds[0]).to.equal(3);
+        expect(ticketCounts[0]).to.equal(3);
+        expect(eventIds[4]).to.equal(11);
+        expect(ticketCounts[4]).to.equal(11);
+      });
+    });
+  });
+
   describe("Fallback Function", () => {
     it("Should revert on direct Ether transfers", async () => {
       const { eventTicketing, attendee } = await loadFixture(
