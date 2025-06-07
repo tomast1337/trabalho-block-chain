@@ -26,7 +26,7 @@ export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
 export type { EventTicketing } from "./contracts/EventTicketing";
 export { EventTicketing__factory } from "./factories/contracts/EventTicketing__factory";
-//export type { Lock } from "./contracts/Lock";
-//export { Lock__factory } from "./factories/contracts/Lock__factory";
+export type { Lock } from "./contracts/Lock";
+export { Lock__factory } from "./factories/contracts/Lock__factory";
 export type { MockUSDC } from "./contracts/MockUSDC";
 export { MockUSDC__factory } from "./factories/contracts/MockUSDC__factory";

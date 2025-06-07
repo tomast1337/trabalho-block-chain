@@ -1,20 +1,25 @@
-// contexts/ContractContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { EventTicketing } from "@event_ticketing/abi-types";
 import {
   getEventTicketingContract,
   getUsdtContract,
 } from "../contracts/eventTicketing";
+import { BrowserProvider, JsonRpcSigner } from "ethers";
 
 interface ContractContextType {
   eventTicketing: EventTicketing | null;
   usdt: ERC20 | null;
+  provider: BrowserProvider | null;
+  signer: JsonRpcSigner | null;
   loading: boolean;
   error: Error | null;
 }
+
 const ContractContext = createContext<ContractContextType>({
   eventTicketing: null,
   usdt: null,
+  provider: null,
+  signer: null,
   loading: true,
   error: null,
 });
@@ -29,8 +34,22 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     eventTicketing: null,
     usdt: null,
   });
+  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    async function initProviderAndSigner() {
+      if (window.ethereum) {
+        const _provider = new BrowserProvider(window.ethereum as any);
+        setProvider(_provider);
+        const _signer = await _provider.getSigner();
+        setSigner(_signer);
+      }
+    }
+    initProviderAndSigner();
+  }, []);
 
   useEffect(() => {
     async function loadContracts() {
@@ -39,7 +58,6 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
           getEventTicketingContract(),
           getUsdtContract(),
         ]);
-
         setContracts({
           eventTicketing,
           usdt,
@@ -52,12 +70,19 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     }
-
     loadContracts();
   }, []);
 
   return (
-    <ContractContext.Provider value={{ ...contracts, loading, error }}>
+    <ContractContext.Provider
+      value={{
+        ...contracts,
+        provider,
+        signer,
+        loading,
+        error,
+      }}
+    >
       {children}
     </ContractContext.Provider>
   );

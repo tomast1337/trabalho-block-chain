@@ -30,6 +30,7 @@ export interface EventTicketingInterface extends Interface {
       | "createEvent"
       | "eventCount"
       | "events"
+      | "getAttendedEventsPaginated"
       | "getEventDetails"
       | "getTicketsOwned"
       | "owner"
@@ -61,6 +62,10 @@ export interface EventTicketingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getAttendedEventsPaginated",
+    values: [AddressLike, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getEventDetails",
     values: [BigNumberish]
   ): string;
@@ -82,6 +87,10 @@ export interface EventTicketingInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "eventCount", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "events", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getAttendedEventsPaginated",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getEventDetails",
     data: BytesLike
@@ -253,6 +262,18 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
 
+  getAttendedEventsPaginated: TypedContractMethod<
+    [_attendee: AddressLike, _page: BigNumberish, _pageSize: BigNumberish],
+    [
+      [bigint[], bigint[], bigint] & {
+        eventIds: bigint[];
+        ticketCounts: bigint[];
+        totalEvents: bigint;
+      }
+    ],
+    "view"
+  >;
+
   getEventDetails: TypedContractMethod<
     [_eventId: BigNumberish],
     [
@@ -327,6 +348,19 @@ export interface EventTicketing extends BaseContract {
         ticketsSold: bigint;
         eventDate: bigint;
         isEventOver: boolean;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getAttendedEventsPaginated"
+  ): TypedContractMethod<
+    [_attendee: AddressLike, _page: BigNumberish, _pageSize: BigNumberish],
+    [
+      [bigint[], bigint[], bigint] & {
+        eventIds: bigint[];
+        ticketCounts: bigint[];
+        totalEvents: bigint;
       }
     ],
     "view"

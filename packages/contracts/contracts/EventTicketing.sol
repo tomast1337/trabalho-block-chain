@@ -194,6 +194,53 @@ contract EventTicketing {
         return events[_eventId].attendees[_attendee];
     }
 
+    function getAttendedEventsPaginated(
+        address _attendee,
+        uint256 _page,
+        uint256 _pageSize
+    )
+        external
+        view
+        returns (
+            uint256[] memory eventIds,
+            uint256[] memory ticketCounts,
+            uint256 totalEvents
+        )
+    {
+        uint256 start = _page * _pageSize + 1; // Event IDs start at 1
+        uint256 end = start + _pageSize;
+
+        // Prevent overflow
+        if (end > eventCount + 1) {
+            end = eventCount + 1;
+        }
+
+        // Temporary arrays
+        uint256[] memory tmpEventIds = new uint256[](_pageSize);
+        uint256[] memory tmpCounts = new uint256[](_pageSize);
+        uint256 found = 0;
+
+        // Scan only the target page range
+        for (uint256 i = start; i < end; i++) {
+            uint256 tickets = events[i].attendees[_attendee];
+            if (tickets > 0) {
+                tmpEventIds[found] = i;
+                tmpCounts[found] = tickets;
+                found++;
+            }
+        }
+
+        // Copy only relevant results
+        eventIds = new uint256[](found);
+        ticketCounts = new uint256[](found);
+        for (uint256 j = 0; j < found; j++) {
+            eventIds[j] = tmpEventIds[j];
+            ticketCounts[j] = tmpCounts[j];
+        }
+
+        return (eventIds, ticketCounts, eventCount);
+    }
+
     receive() external payable {
         revert("Direct Ether transfers not allowed. Use buyTicket function.");
     }

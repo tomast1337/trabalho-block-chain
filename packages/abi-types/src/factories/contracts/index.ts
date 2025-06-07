@@ -2,5 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export { EventTicketing__factory } from "./EventTicketing__factory";
-//export { Lock__factory } from "./Lock__factory";
+export { Lock__factory } from "./Lock__factory";
 export { MockUSDC__factory } from "./MockUSDC__factory";
