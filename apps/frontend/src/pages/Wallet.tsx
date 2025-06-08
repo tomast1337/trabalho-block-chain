@@ -11,6 +11,7 @@ export const Wallet = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /*
   const [pageData, setPageData] = useState<{
     data: unknown[];
     currentPage: number;
@@ -20,6 +21,7 @@ export const Wallet = () => {
     currentPage: 1,
     limit: 50,
   });
+  */
   // Fetch balance automatically when component mounts
   useEffect(() => {
     const fetchBalance = async () => {
