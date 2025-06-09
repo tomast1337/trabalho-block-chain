@@ -195,9 +195,9 @@ contract EventTicketing {
     }
 
     function getAttendedEventsPaginated(
-        address _attendee,
-        uint256 _page,
-        uint256 _pageSize
+        address _attendee, // Address of the attendee
+        uint256 _page, // Page number starting from 0
+        uint256 _pageSize // Number of events per page
     )
         external
         view
@@ -239,6 +239,79 @@ contract EventTicketing {
         }
 
         return (eventIds, ticketCounts, eventCount);
+    }
+
+    function getEventsPaginated(
+        uint256 _page, // Page number starting from 0
+        uint256 _pageSize, // Number of events per page
+        bool _onlyActive // When true, returns only active (not finished) events
+    )
+        external
+        view
+        returns (
+            uint256[] memory eventIds,
+            string[] memory names,
+            bool[] memory isFinished,
+            uint256 totalEvents
+        )
+    {
+        // Calculate the range of events to scan
+        uint256 start = _page * _pageSize + 1; // Event IDs start at 1
+        uint256 end = start + _pageSize;
+
+        // Adjust end if it exceeds total event count
+        if (end > eventCount + 1) {
+            end = eventCount + 1;
+        }
+
+        // Temporary arrays with maximum possible size
+        uint256[] memory tmpEventIds = new uint256[](_pageSize);
+        string[] memory tmpNames = new string[](_pageSize);
+        bool[] memory tmpIsFinished = new bool[](_pageSize);
+        uint256 found = 0;
+
+        // Scan only the target page range
+        for (uint256 i = start; i < end; i++) {
+            Event storage e = events[i];
+
+            // Skip if filtering for active events and this event is finished
+            if (_onlyActive && e.isEventOver) {
+                continue;
+            }
+
+            tmpEventIds[found] = i;
+            tmpNames[found] = e.name;
+            tmpIsFinished[found] = e.isEventOver;
+            found++;
+        }
+
+        // Create properly sized arrays for the results
+        eventIds = new uint256[](found);
+        names = new string[](found);
+        isFinished = new bool[](found);
+
+        // Copy the relevant items
+        for (uint256 j = 0; j < found; j++) {
+            eventIds[j] = tmpEventIds[j];
+            names[j] = tmpNames[j];
+            isFinished[j] = tmpIsFinished[j];
+        }
+
+        return (eventIds, names, isFinished, eventCount);
+    }
+
+    // Returns remaining tickets
+    function getRemainingTickets(
+        uint256 _eventId
+    ) external view returns (uint256) {
+        Event storage e = events[_eventId];
+        return e.totalTickets - e.ticketsSold;
+    }
+
+    // Returns if event is active (not over and not started)
+    function isEventActive(uint256 _eventId) external view returns (bool) {
+        Event storage e = events[_eventId];
+        return !e.isEventOver && block.timestamp < e.eventDate;
     }
 
     receive() external payable {

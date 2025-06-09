@@ -595,6 +595,290 @@ describe("EventTicketing", () => {
     });
   });
 
+  describe("Event Query Functions", () => {
+    const deployWithMultipleEventsFixture = async () => {
+      const fixture = await deployEventTicketingFixture();
+      const {
+        eventTicketing,
+        organizer,
+        eventDate,
+        TICKET_PRICE,
+        TOTAL_TICKETS,
+        usdc,
+        attendee,
+      } = fixture;
+
+      // Create all events in the future
+      const event1Date = eventDate + 86400; // +1 day
+      const event2Date = eventDate + 172800; // +2 days
+      const event3Date = eventDate + 259200; // +3 days
+      const event4Date = eventDate + 345600; // +4 days
+      const event5Date = eventDate + 432000; // +5 days
+
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Active Event 1",
+          "Description 1",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event1Date
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Active Event 2",
+          "Description 2",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event2Date
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Finished Event 1",
+          "Description 3",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event3Date
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Active Event 3",
+          "Description 4",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event4Date
+        );
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Finished Event 2",
+          "Description 5",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event5Date
+        );
+
+      // Approve enough USDC for all purchases
+      await usdc
+        .connect(attendee)
+        .approve(eventTicketing.target, TICKET_PRICE * 12n);
+
+      // Buy tickets for events (so withdrawFunds won't revert)
+      await eventTicketing.connect(attendee).buyTicket(1, 3); // Active Event 1
+      await eventTicketing.connect(attendee).buyTicket(2, 5); // Active Event 2
+      await eventTicketing.connect(attendee).buyTicket(3, 1); // Finished Event 1
+      await eventTicketing.connect(attendee).buyTicket(5, 1); // Finished Event 2
+
+      // Do NOT advance time or call withdrawFunds here!
+      // Let each test control time and event status as needed.
+
+      return {
+        ...fixture,
+        event1Date,
+        event2Date,
+        event3Date,
+        event4Date,
+        event5Date,
+      };
+    };
+
+    describe("getEventsPaginated", () => {
+      it("Should return all events when no filter is applied", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const [eventIds, names, isFinished, total] =
+          await eventTicketing.getEventsPaginated(0, 10, false);
+
+        expect(total).to.equal(5);
+        expect(eventIds).to.have.lengthOf(5);
+        expect(names).to.have.lengthOf(5);
+        expect(isFinished).to.have.lengthOf(5);
+
+        // Verify order (should be in creation order)
+        expect(names[0]).to.equal("Active Event 1");
+        expect(names[1]).to.equal("Active Event 2");
+        expect(names[2]).to.equal("Finished Event 1");
+        expect(names[3]).to.equal("Active Event 3");
+        expect(names[4]).to.equal("Finished Event 2");
+
+        // Verify finished status
+        expect(isFinished[0]).to.be.false;
+        expect(isFinished[1]).to.be.false;
+        expect(isFinished[2]).to.be.true;
+        expect(isFinished[3]).to.be.false;
+        expect(isFinished[4]).to.be.true;
+      });
+
+      it("Should return only active events when filtered", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const [eventIds, names, isFinished, total] =
+          await eventTicketing.getEventsPaginated(0, 10, true);
+
+        expect(total).to.equal(5); // Total count includes all events
+        expect(eventIds).to.have.lengthOf(3); // Only active events returned
+
+        // Verify only active events are included
+        expect(names).to.deep.equal([
+          "Active Event 1",
+          "Active Event 2",
+          "Active Event 3",
+        ]);
+        expect(isFinished.every((finished) => !finished)).to.be.true;
+      });
+
+      it("Should handle pagination correctly", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // First page (2 items)
+        const [page1Ids, page1Names] = await eventTicketing.getEventsPaginated(
+          0,
+          2,
+          false
+        );
+        expect(page1Ids).to.have.lengthOf(2);
+        expect(page1Names).to.deep.equal(["Active Event 1", "Active Event 2"]);
+
+        // Second page (2 items)
+        const [page2Ids, page2Names] = await eventTicketing.getEventsPaginated(
+          1,
+          2,
+          false
+        );
+        expect(page2Ids).to.have.lengthOf(2);
+        expect(page2Names).to.deep.equal([
+          "Finished Event 1",
+          "Active Event 3",
+        ]);
+
+        // Third page (1 item)
+        const [page3Ids, page3Names] = await eventTicketing.getEventsPaginated(
+          2,
+          2,
+          false
+        );
+        expect(page3Ids).to.have.lengthOf(1);
+        expect(page3Names).to.deep.equal(["Finished Event 2"]);
+      });
+
+      it("Should return empty arrays for out-of-bounds pages", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const [eventIds, names] = await eventTicketing.getEventsPaginated(
+          2,
+          10,
+          false
+        );
+        expect(eventIds).to.have.lengthOf(0);
+        expect(names).to.have.lengthOf(0);
+      });
+
+      it("Should combine pagination with active filter correctly", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // First page of active events (2 items)
+        const [page1Ids, page1Names] = await eventTicketing.getEventsPaginated(
+          0,
+          2,
+          true
+        );
+        expect(page1Ids).to.have.lengthOf(2);
+        expect(page1Names).to.deep.equal(["Active Event 1", "Active Event 2"]);
+
+        // Second page of active events (1 item)
+        const [page2Ids, page2Names] = await eventTicketing.getEventsPaginated(
+          1,
+          2,
+          true
+        );
+        expect(page2Ids).to.have.lengthOf(1);
+        expect(page2Names).to.deep.equal(["Active Event 3"]);
+      });
+    });
+
+    describe("getRemainingTickets", () => {
+      it("Should return correct remaining ticket count", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // Event 1 had 3 tickets sold out of TOTAL_TICKETS (100)
+        const remaining1 = await eventTicketing.getRemainingTickets(1);
+        expect(remaining1).to.equal(97);
+
+        // Event 2 had 5 tickets sold
+        const remaining2 = await eventTicketing.getRemainingTickets(2);
+        expect(remaining2).to.equal(95);
+
+        // Event 3 had no tickets sold
+        const remaining3 = await eventTicketing.getRemainingTickets(3);
+        expect(remaining3).to.equal(100);
+      });
+
+      it("Should return 0 when event is sold out", async () => {
+        const { eventTicketing, attendee, usdc, TICKET_PRICE } =
+          await loadFixture(deployWithMultipleEventsFixture);
+
+        // Buy all remaining tickets for event 1 (already has 3 sold)
+        const remainingBefore = await eventTicketing.getRemainingTickets(1);
+        await usdc
+          .connect(attendee)
+          .approve(eventTicketing.target, remainingBefore * TICKET_PRICE);
+        await eventTicketing.connect(attendee).buyTicket(1, remainingBefore);
+
+        const remainingAfter = await eventTicketing.getRemainingTickets(1);
+        expect(remainingAfter).to.equal(0);
+      });
+    });
+
+    describe("isEventActive", () => {
+      it("Should correctly identify active events", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // Active events (not finished and not started)
+        expect(await eventTicketing.isEventActive(1)).to.be.true;
+        expect(await eventTicketing.isEventActive(2)).to.be.true;
+        expect(await eventTicketing.isEventActive(4)).to.be.true;
+      });
+
+      it("Should return false for finished events", async () => {
+        const { eventTicketing } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        expect(await eventTicketing.isEventActive(3)).to.be.false;
+        expect(await eventTicketing.isEventActive(5)).to.be.false;
+      });
+
+      it("Should return false for ongoing but not finished events", async () => {
+        const { eventTicketing, eventDate } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        // Set time to during event 1 (start time + 12 hours)
+        await time.increaseTo(eventDate + 86400 / 2);
+
+        // Event is ongoing (started but not finished)
+        expect(await eventTicketing.isEventActive(1)).to.be.false;
+      });
+    });
+  });
+
   describe("Fallback Function", () => {
     it("Should revert on direct Ether transfers", async () => {
       const { eventTicketing, attendee } = await loadFixture(

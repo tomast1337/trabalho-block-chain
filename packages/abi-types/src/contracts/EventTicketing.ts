@@ -32,7 +32,10 @@ export interface EventTicketingInterface extends Interface {
       | "events"
       | "getAttendedEventsPaginated"
       | "getEventDetails"
+      | "getEventsPaginated"
+      | "getRemainingTickets"
       | "getTicketsOwned"
+      | "isEventActive"
       | "owner"
       | "usdcToken"
       | "withdrawFunds"
@@ -70,8 +73,20 @@ export interface EventTicketingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getEventsPaginated",
+    values: [BigNumberish, BigNumberish, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRemainingTickets",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getTicketsOwned",
     values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isEventActive",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(functionFragment: "usdcToken", values?: undefined): string;
@@ -96,7 +111,19 @@ export interface EventTicketingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getEventsPaginated",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRemainingTickets",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getTicketsOwned",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "isEventActive",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -291,9 +318,34 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
 
+  getEventsPaginated: TypedContractMethod<
+    [_page: BigNumberish, _pageSize: BigNumberish, _onlyActive: boolean],
+    [
+      [bigint[], string[], boolean[], bigint] & {
+        eventIds: bigint[];
+        names: string[];
+        isFinished: boolean[];
+        totalEvents: bigint;
+      }
+    ],
+    "view"
+  >;
+
+  getRemainingTickets: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
   getTicketsOwned: TypedContractMethod<
     [_eventId: BigNumberish, _attendee: AddressLike],
     [bigint],
+    "view"
+  >;
+
+  isEventActive: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [boolean],
     "view"
   >;
 
@@ -384,12 +436,32 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getEventsPaginated"
+  ): TypedContractMethod<
+    [_page: BigNumberish, _pageSize: BigNumberish, _onlyActive: boolean],
+    [
+      [bigint[], string[], boolean[], bigint] & {
+        eventIds: bigint[];
+        names: string[];
+        isFinished: boolean[];
+        totalEvents: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getRemainingTickets"
+  ): TypedContractMethod<[_eventId: BigNumberish], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getTicketsOwned"
   ): TypedContractMethod<
     [_eventId: BigNumberish, _attendee: AddressLike],
     [bigint],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "isEventActive"
+  ): TypedContractMethod<[_eventId: BigNumberish], [boolean], "view">;
   getFunction(
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
