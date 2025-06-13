@@ -7,6 +7,7 @@ import { HashRouter } from "react-router-dom";
 import { App } from "./App.tsx";
 import { EthereumProviderErrorPage } from "./pages/EthereumProviderErrorPage.tsx";
 import { WalletInitializingPage } from "./pages/WalletInitializingPage.tsx";
+import { Toaster } from "./components/ui/sonner.tsx";
 
 export function RootComponent() {
   const [initializationState, setInitializationState] = useState<
@@ -37,6 +38,7 @@ export function RootComponent() {
   return (
     <ContractProvider>
       <HashRouter>
+        <Toaster />
         <App />
       </HashRouter>
     </ContractProvider>

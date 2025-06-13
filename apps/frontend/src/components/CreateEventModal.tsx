@@ -29,6 +29,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { toast } from "sonner";
 
 const eventSchema = zod.object({
   name: zod.string().min(1, "Event name is required"),
@@ -72,10 +73,12 @@ export const CreateEventModal = ({
           data.totalTickets,
           BigInt(Math.floor(data.ticketPrice * 100)) // 6 decimal places for USDT
         );
+        toast.success("Event created successfully!");
       }
       onOpenChange(false); // Close the modal after submission
     } catch (error) {
       console.error("Error creating event:", error);
+      toast.error("Failed to create event. Please try again.");
     }
   };
 
