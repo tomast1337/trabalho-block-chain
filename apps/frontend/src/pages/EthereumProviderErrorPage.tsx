@@ -1,7 +1,11 @@
 import { Footer } from "@/components/Footer";
 import { AlertCircle, Home } from "lucide-react";
 
-export const EthereumProviderErrorPage = ({ error }: { error?: Error }) => {
+export const EthereumProviderErrorPage = ({
+  error,
+}: {
+  error?: Error & { code?: number };
+}) => {
   const Message = () => {
     if (!error) {
       return (
@@ -17,7 +21,27 @@ export const EthereumProviderErrorPage = ({ error }: { error?: Error }) => {
       );
     }
 
+    // Handle user rejected action (MetaMask, WalletConnect, etc)
+    if (
+      (typeof error.code === "number" && error.code === 4001) ||
+      (typeof error.message === "string" &&
+        (error.message.toLowerCase().includes("user rejected") ||
+          error.message.toLowerCase().includes("action_rejected")))
+    ) {
+      return (
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">Action Rejected</h3>
+          <p className="mt-2 text-gray-600">
+            You rejected the wallet request. Please approve the request in your
+            wallet to continue.
+          </p>
+        </div>
+      );
+    }
+
     if (typeof error.message === "string") {
+      console.log("Ethereum Provider Error:", error);
       return (
         <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
