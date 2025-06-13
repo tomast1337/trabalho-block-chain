@@ -1,3 +1,4 @@
+import { CreateEventButton } from "@/components/CreateEvent";
 import { Button } from "@/components/ui/button";
 import { useContracts } from "@event_ticketing/blockchain-access";
 
@@ -27,6 +28,7 @@ export const Home = () => {
   };
   return (
     <div className="flex-grow flex flex-col items-center justify-center">
+      <CreateEventButton />
       <h1 className="text-4xl font-bold mb-4 text-gray-800">🏠 Home Page</h1>
       <Button onClick={onClick}>Click Me</Button>
     </div>
