@@ -13,7 +13,9 @@ export function Footer() {
           {/* Social Links (optional) */}
           <div className="hidden md:flex gap-4 mt-4 md:mt-0">
             <a
-              href="#"
+              href="https://github.com/tomast1337/trabalho-block-chain"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-gray-400 hover:text-indigo-300 transition-colors"
             >
               <span className="sr-only">GitHub</span>
