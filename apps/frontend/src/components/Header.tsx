@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Calendar, Home, Info, Menu, Ticket, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Home, Ticket, User, Info, Wallet } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ModeToggle } from "./mode-toggle";
 
-export function Header() {
+export const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { pathname } = useLocation();
 
@@ -21,15 +22,15 @@ export function Header() {
     },
     { path: "/profile", label: "Profile", icon: <User className="h-5 w-5" /> },
     { path: "/about", label: "About", icon: <Info className="h-5 w-5" /> },
-    { path: "/wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-gray-900 shadow-md">
+    <header className="sticky top-0 z-50 bg-accent text-primary shadow-md">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo/Brand */}
-          <Link to="/" className="text-xl font-bold text-white">
+          <Link to="/" className="text-xl font-bold ">
+            <Calendar className="inline-block mr-2 h-6 w-6 " />
             EventTicketing
           </Link>
 
@@ -41,19 +42,22 @@ export function Header() {
                 to={link.path}
                 className={`flex items-center gap-2 transition-colors ${
                   pathname === link.path
-                    ? "text-indigo-400 font-medium"
-                    : "text-gray-300 hover:text-indigo-300"
+                    ? "text-accent-foreground bg-accent rounded-lg px-3 py-2"
+                    : "text-primary hover:bg-accent hover:text-accent-foreground px-3 py-2 rounded-lg"
                 }`}
               >
                 {link.icon}
                 <span>{link.label}</span>
               </Link>
             ))}
+            <div className="ml-4">
+              <ModeToggle />
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-gray-300 hover:text-white focus:outline-none"
+            className="md:hidden p-2 text-primary hover:text-indigo-400 transition-colors"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >
@@ -117,4 +121,4 @@ export function Header() {
       </AnimatePresence>
     </header>
   );
-}
+};

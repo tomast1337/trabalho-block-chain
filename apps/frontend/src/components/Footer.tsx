@@ -1,6 +1,6 @@
-export function Footer() {
+export const Footer: React.FC = () => {
   return (
-    <footer className="bg-gray-900 text-gray-300 py-6 shadow-inner mt-auto">
+    <footer className="bg-accent text-primary py-6 shadow-inner mt-auto">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           {/* Copyright */}
@@ -16,7 +16,7 @@ export function Footer() {
               href="https://github.com/tomast1337/trabalho-block-chain"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-indigo-300 transition-colors"
+              className="text-primary hover:text-indigo-400 transition-colors"
             >
               <span className="sr-only">GitHub</span>
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -32,4 +32,4 @@ export function Footer() {
       </div>
     </footer>
   );
-}
+};

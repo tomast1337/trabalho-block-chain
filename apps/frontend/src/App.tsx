@@ -3,7 +3,7 @@ import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { MainContent } from "./components/MainContent";
 
-export function App() {
+export const App: React.FC = () => {
   const { error, loading } = useContracts();
 
   return (
@@ -15,4 +15,4 @@ export function App() {
       <Footer />
     </div>
   );
-}
+};

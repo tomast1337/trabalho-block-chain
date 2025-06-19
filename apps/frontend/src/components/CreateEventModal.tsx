@@ -42,13 +42,10 @@ const eventSchema = zod.object({
   }),
 });
 type EventFormData = zod.infer<typeof eventSchema>;
-export const CreateEventModal = ({
-  isOpen,
-  onOpenChange,
-}: {
+export const CreateEventModal: React.FC<{
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-}) => {
+}> = ({ isOpen, onOpenChange }) => {
   const { eventTicketing } = useContracts();
 
   const form = useForm<EventFormData>({

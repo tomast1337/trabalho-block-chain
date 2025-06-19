@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-export function ContractError() {
+export const ContractError: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 text-center px-4">
       <h1 className="text-4xl font-bold text-red-700 mb-4">
@@ -21,4 +21,4 @@ export function ContractError() {
       </div>
     </div>
   );
-}
+};

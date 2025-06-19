@@ -1,11 +1,9 @@
 import { Footer } from "@/components/Footer";
 import { AlertCircle, Home } from "lucide-react";
 
-export const EthereumProviderErrorPage = ({
-  error,
-}: {
+export const EthereumProviderErrorPage: React.FC<{
   error?: Error & { code?: number };
-}) => {
+}> = ({ error }) => {
   const Message = () => {
     if (!error) {
       return (

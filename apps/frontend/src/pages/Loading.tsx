@@ -1,5 +1,5 @@
 import { Loader2, Rocket } from "lucide-react";
-export function LoadingPage() {
+export const LoadingPage: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
       <div className="max-w-md w-full space-y-8 text-center">
@@ -23,4 +23,4 @@ export function LoadingPage() {
       </div>
     </div>
   );
-}
+};
