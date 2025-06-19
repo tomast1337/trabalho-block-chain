@@ -31,6 +31,7 @@ export interface EventTicketingInterface extends Interface {
       | "eventCount"
       | "events"
       | "getAttendedEventsPaginated"
+      | "getBlockTimestamp"
       | "getEventDetails"
       | "getEventsPaginated"
       | "getRemainingTickets"
@@ -69,6 +70,10 @@ export interface EventTicketingInterface extends Interface {
     values: [AddressLike, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getBlockTimestamp",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "getEventDetails",
     values: [BigNumberish]
   ): string;
@@ -104,6 +109,10 @@ export interface EventTicketingInterface extends Interface {
   decodeFunctionResult(functionFragment: "events", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getAttendedEventsPaginated",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getBlockTimestamp",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -301,6 +310,8 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
 
+  getBlockTimestamp: TypedContractMethod<[], [bigint], "view">;
+
   getEventDetails: TypedContractMethod<
     [_eventId: BigNumberish],
     [
@@ -417,6 +428,9 @@ export interface EventTicketing extends BaseContract {
     ],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "getBlockTimestamp"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getEventDetails"
   ): TypedContractMethod<

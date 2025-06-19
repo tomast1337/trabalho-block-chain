@@ -314,6 +314,10 @@ contract EventTicketing {
         return !e.isEventOver && block.timestamp < e.eventDate;
     }
 
+    function getBlockTimestamp() external view returns (uint256) {
+        return block.timestamp;
+    }
+
     receive() external payable {
         revert("Direct Ether transfers not allowed. Use buyTicket function.");
     }

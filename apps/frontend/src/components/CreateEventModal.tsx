@@ -8,7 +8,9 @@ import {
 } from "@radix-ui/react-popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import zod from "zod";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
@@ -29,7 +31,6 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { toast } from "sonner";
 
 const eventSchema = zod.object({
   name: zod.string().min(1, "Event name is required"),
@@ -61,24 +62,92 @@ export const CreateEventModal = ({
     },
   });
 
-  const onSubmit = async (data: EventFormData) => {
-    try {
-      console.log("Event Created:", data);
-      // Here you would typically send the data to your backend
+  const [blockTimeStamp, setBlockTimestamp] = useState<bigint | null>(null);
+  const [blockTimestampLoading, setBlockTimestampLoading] = useState(false);
+  const [blockTimestampError, setBlockTimestampError] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    const fetchBlockTimestamp = async () => {
       if (eventTicketing) {
+        try {
+          setBlockTimestampLoading(true);
+          setBlockTimestampError(null);
+          const block = await eventTicketing.getBlockTimestamp();
+          setBlockTimestamp(block);
+        } catch (error) {
+          console.error("Error fetching block timestamp:", error);
+          setBlockTimestampError("Failed to fetch blockchain time");
+        } finally {
+          setBlockTimestampLoading(false);
+        }
+      }
+    };
+
+    fetchBlockTimestamp();
+  }, [eventTicketing]);
+
+  const onSubmit = async (data: EventFormData) => {
+    // Here you would typically send the data to your backend
+    if (eventTicketing) {
+      const now = Math.floor(Date.now() / 1000);
+      const eventDateTimestamp = Math.floor(
+        new Date(data.eventDate).getTime() / 1000
+      );
+      const bufferSeconds = 300; // 5-minute buffer for block confirmation
+
+      if (eventDateTimestamp <= now) {
+        toast.error("Event date must be at least 5 minutes in the future.");
+        return;
+      }
+
+      if (
+        blockTimeStamp &&
+        eventDateTimestamp <= Number(blockTimeStamp) + bufferSeconds
+      ) {
+        toast.error(
+          `Event date must be after block timestamp (${new Date(
+            Number(blockTimeStamp) * 1000
+          ).toLocaleString()})`
+        );
+        return;
+      }
+      try {
         await eventTicketing.createEvent(
           data.name,
           data.description,
           Math.floor(new Date(data.eventDate).getTime() / 1000),
           data.totalTickets,
-          BigInt(Math.floor(data.ticketPrice * 100)) // 6 decimal places for USDT
+          data.ticketPrice * 1e6
         );
         toast.success("Event created successfully!");
+        onOpenChange(false);
+      } catch (error: unknown) {
+        console.error("Error creating event:", error);
+
+        function isEthersErrorWithReason(e: unknown): e is { reason: string } {
+          return (
+            typeof e === "object" &&
+            e !== null &&
+            "reason" in e &&
+            typeof (e as { reason: unknown }).reason === "string"
+          );
+        }
+
+        if (isEthersErrorWithReason(error)) {
+          const reason = error.reason;
+          if (reason.includes("Event date must be in the future")) {
+            toast.error("Please select a future date for your event");
+          } else if (reason.includes("insufficient funds")) {
+            toast.error("You need ETH to cover transaction costs");
+          } else {
+            toast.error("Failed to create event. Please try again.");
+          }
+        } else {
+          toast.error("Failed to create event. Please try again.");
+        }
       }
-      onOpenChange(false); // Close the modal after submission
-    } catch (error) {
-      console.error("Error creating event:", error);
-      toast.error("Failed to create event. Please try again.");
     }
   };
 
@@ -197,9 +266,16 @@ export const CreateEventModal = ({
                         mode="single"
                         selected={new Date(field.value)}
                         onSelect={(date) => field.onChange(date?.toISOString())}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0))
-                        }
+                        disabled={(date) => {
+                          if (blockTimestampLoading) return true;
+                          if (blockTimestampError) return date < new Date();
+
+                          const minDate = blockTimeStamp
+                            ? new Date(Number(blockTimeStamp) * 1000 + 300000) // 5-minute buffer
+                            : new Date();
+
+                          return date < minDate;
+                        }}
                         autoFocus
                       />
                     </PopoverContent>
