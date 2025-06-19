@@ -1,7 +1,7 @@
 import { useContracts } from "@event_ticketing/blockchain-access";
 import { Ban, CalendarArrowUp, LoaderCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { EventCard, type Event } from "./Event";
+import { EventCard, type Event } from "./EventCard";
 
 export const EventList: React.FC = () => {
   const { eventTicketing } = useContracts();

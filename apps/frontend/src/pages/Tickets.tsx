@@ -2,6 +2,7 @@ import { useContracts } from "@event_ticketing/blockchain-access";
 import { formatUnits } from "ethers";
 import { Loader2, WalletIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { type Event } from "../components/EventCard"; // Adjust the import path as necessary
 
 export const Tickets: React.FC = () => {
   const { usdt, eventTicketing, signer } = useContracts();
@@ -10,9 +11,8 @@ export const Tickets: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /*
   const [pageData, setPageData] = useState<{
-    data: unknown[];
+    data: Event[];
     currentPage: number;
     limit: number;
   }>({
@@ -20,7 +20,7 @@ export const Tickets: React.FC = () => {
     currentPage: 1,
     limit: 50,
   });
-  */
+
   // Fetch balance automatically when component mounts
   useEffect(() => {
     const fetchBalance = async () => {

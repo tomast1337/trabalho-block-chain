@@ -42,8 +42,8 @@ export const Header: React.FC = () => {
                 to={link.path}
                 className={`flex items-center gap-2 transition-colors ${
                   pathname === link.path
-                    ? "text-accent-foreground bg-accent rounded-lg px-3 py-2"
-                    : "text-primary hover:bg-accent hover:text-accent-foreground px-3 py-2 rounded-lg"
+                    ? " text-sidebar-primary"
+                    : "text-primary hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 {link.icon}
@@ -74,34 +74,39 @@ export const Header: React.FC = () => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", ease: "easeInOut" }}
-            className="fixed inset-y-0 right-0 w-64 bg-gray-800 z-50 md:hidden shadow-xl"
+            className="fixed inset-y-0 right-0 w-64 bg-accent z-50 md:hidden shadow-xl"
           >
             <div className="flex flex-col h-full p-4">
               <div className="flex justify-end mb-8">
                 <button
-                  className="p-2 text-gray-300 hover:text-white"
+                  className="p-2 text-accents hover:text-white"
                   onClick={() => setIsOpen(false)}
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
 
-              <nav className="flex flex-col gap-6">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                      pathname === link.path
-                        ? "bg-gray-700 text-indigo-400"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                    }`}
-                  >
-                    {link.icon}
-                    <span className="text-lg">{link.label}</span>
-                  </Link>
-                ))}
-              </nav>
+              <div className="flex-grow flex-col flex items-start justify-start">
+                <nav className="flex flex-col gap-6">
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                        pathname === link.path
+                          ? "bg-sidebar-primary-foreground text-sidebar-primary"
+                          : "text-primary hover:bg-accent hover:text-accent-foreground"
+                      }`}
+                    >
+                      {link.icon}
+                      <span className="text-lg">{link.label}</span>
+                    </Link>
+                  ))}
+                </nav>
+                <div className="mx-auto mt-6">
+                  <ModeToggle />
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -114,7 +119,8 @@ export const Header: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.75)" }}
             onClick={() => setIsOpen(false)}
           />
         )}
