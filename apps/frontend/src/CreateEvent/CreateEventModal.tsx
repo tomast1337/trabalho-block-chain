@@ -12,15 +12,15 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import zod from "zod";
-import { Button } from "./ui/button";
-import { Calendar } from "./ui/calendar";
+import { Button } from "../components/ui/button";
+import { Calendar } from "../components/ui/calendar";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
+} from "../components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -28,9 +28,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
+} from "../components/ui/form";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
 
 const eventSchema = zod.object({
   name: zod.string().min(1, "Event name is required"),

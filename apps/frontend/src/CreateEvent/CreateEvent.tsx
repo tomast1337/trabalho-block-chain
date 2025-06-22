@@ -1,7 +1,7 @@
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { CreateEventModal } from "./CreateEventModal";
-import { Button } from "./ui/button";
+import { Button } from "../components/ui/button";
 
 export const CreateEventButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

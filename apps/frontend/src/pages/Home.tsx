@@ -1,4 +1,4 @@
-import { CreateEventButton } from "@/components/CreateEvent";
+import { CreateEventButton } from "@/CreateEvent/CreateEvent";
 import { CalendarArrowUp } from "lucide-react";
 import React from "react";
 import { EventList } from "../components/EventList";
