@@ -118,11 +118,11 @@ async function createSampleEvents(
   const organizers = accounts.slice(0, 5);
 
   // Get current block timestamp first
-  const currentBlock = await ethers.provider.getBlock("latest");
-  if (!currentBlock || !currentBlock.timestamp) {
-    throw new Error("Failed to fetch current block timestamp");
+  const latestBlock = await ethers.provider.getBlock("latest");
+  if (!latestBlock) {
+    throw new Error("Could not get the latest block");
   }
-  const currentBlockTimestamp = BigInt(currentBlock.timestamp);
+  const currentBlockTimestamp = BigInt(latestBlock.timestamp);
   console.log(`⏱ Current block timestamp: ${currentBlockTimestamp}`);
 
   for (const organizer of organizers) {
@@ -147,9 +147,9 @@ async function createSampleEvents(
         .createEvent(
           eventData.name,
           eventData.description,
-          eventTimestamp,
           ethers.parseUnits(eventData.ticketPrice, 6),
-          eventData.maxTickets
+          eventData.maxTickets,
+          eventTimestamp
         );
 
       await tx.wait();
@@ -168,6 +168,7 @@ async function createSampleEvents(
     }
   }
 }
+
 async function main() {
   try {
     const [deployer, ...accounts] = await ethers.getSigners();

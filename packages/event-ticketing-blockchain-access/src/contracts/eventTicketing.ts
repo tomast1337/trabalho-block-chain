@@ -6,9 +6,9 @@ import { getSigner } from "../providers/web3Provider";
 import { ethers } from "ethers";
 
 // Default address for local development
-const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 // USDT contract address (replace with actual USDT address for each network)
-const USDT_ADDRESS = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
+const USDT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 export async function getEventTicketingContract(): Promise<EventTicketing> {
   const signer = await getSigner();
