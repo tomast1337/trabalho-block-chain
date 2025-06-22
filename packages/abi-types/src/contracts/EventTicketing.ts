@@ -23,6 +23,42 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace EventTicketing {
+  export type EventInfoStruct = {
+    id: BigNumberish;
+    organizer: AddressLike;
+    name: string;
+    description: string;
+    ticketPrice: BigNumberish;
+    totalTickets: BigNumberish;
+    ticketsSold: BigNumberish;
+    eventDate: BigNumberish;
+    isEventOver: boolean;
+  };
+
+  export type EventInfoStructOutput = [
+    id: bigint,
+    organizer: string,
+    name: string,
+    description: string,
+    ticketPrice: bigint,
+    totalTickets: bigint,
+    ticketsSold: bigint,
+    eventDate: bigint,
+    isEventOver: boolean
+  ] & {
+    id: bigint;
+    organizer: string;
+    name: string;
+    description: string;
+    ticketPrice: bigint;
+    totalTickets: bigint;
+    ticketsSold: bigint;
+    eventDate: bigint;
+    isEventOver: boolean;
+  };
+}
+
 export interface EventTicketingInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -31,13 +67,14 @@ export interface EventTicketingInterface extends Interface {
       | "eventCount"
       | "events"
       | "getAttendedEventsPaginated"
-      | "getBlockTimestamp"
       | "getEventDetails"
+      | "getEventsByOrganizer"
       | "getEventsPaginated"
       | "getRemainingTickets"
       | "getTicketsOwned"
       | "isEventActive"
       | "owner"
+      | "setOwner"
       | "usdcToken"
       | "withdrawFunds"
   ): FunctionFragment;
@@ -70,12 +107,12 @@ export interface EventTicketingInterface extends Interface {
     values: [AddressLike, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getBlockTimestamp",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "getEventDetails",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getEventsByOrganizer",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getEventsPaginated",
@@ -94,6 +131,10 @@ export interface EventTicketingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "setOwner",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(functionFragment: "usdcToken", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "withdrawFunds",
@@ -112,11 +153,11 @@ export interface EventTicketingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getBlockTimestamp",
+    functionFragment: "getEventDetails",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getEventDetails",
+    functionFragment: "getEventsByOrganizer",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -136,6 +177,7 @@ export interface EventTicketingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "usdcToken", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "withdrawFunds",
@@ -310,8 +352,6 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
 
-  getBlockTimestamp: TypedContractMethod<[], [bigint], "view">;
-
   getEventDetails: TypedContractMethod<
     [_eventId: BigNumberish],
     [
@@ -329,16 +369,15 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
 
+  getEventsByOrganizer: TypedContractMethod<
+    [_organizer: AddressLike],
+    [EventTicketing.EventInfoStructOutput[]],
+    "view"
+  >;
+
   getEventsPaginated: TypedContractMethod<
     [_page: BigNumberish, _pageSize: BigNumberish, _onlyActive: boolean],
-    [
-      [bigint[], string[], boolean[], bigint] & {
-        eventIds: bigint[];
-        names: string[];
-        isFinished: boolean[];
-        totalEvents: bigint;
-      }
-    ],
+    [[EventTicketing.EventInfoStructOutput[], bigint]],
     "view"
   >;
 
@@ -361,6 +400,8 @@ export interface EventTicketing extends BaseContract {
   >;
 
   owner: TypedContractMethod<[], [string], "view">;
+
+  setOwner: TypedContractMethod<[_newOwner: AddressLike], [void], "nonpayable">;
 
   usdcToken: TypedContractMethod<[], [string], "view">;
 
@@ -429,9 +470,6 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "getBlockTimestamp"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
     nameOrSignature: "getEventDetails"
   ): TypedContractMethod<
     [_eventId: BigNumberish],
@@ -450,17 +488,17 @@ export interface EventTicketing extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "getEventsByOrganizer"
+  ): TypedContractMethod<
+    [_organizer: AddressLike],
+    [EventTicketing.EventInfoStructOutput[]],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "getEventsPaginated"
   ): TypedContractMethod<
     [_page: BigNumberish, _pageSize: BigNumberish, _onlyActive: boolean],
-    [
-      [bigint[], string[], boolean[], bigint] & {
-        eventIds: bigint[];
-        names: string[];
-        isFinished: boolean[];
-        totalEvents: bigint;
-      }
-    ],
+    [[EventTicketing.EventInfoStructOutput[], bigint]],
     "view"
   >;
   getFunction(
@@ -479,6 +517,9 @@ export interface EventTicketing extends BaseContract {
   getFunction(
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "setOwner"
+  ): TypedContractMethod<[_newOwner: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "usdcToken"
   ): TypedContractMethod<[], [string], "view">;
