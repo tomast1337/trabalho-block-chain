@@ -1,14 +1,15 @@
 import {
   EventTicketing,
   EventTicketing__factory,
+  MockUSDC as ERC20,
 } from "@event_ticketing/abi-types";
 import { getSigner } from "../providers/web3Provider";
 import { ethers } from "ethers";
 
 // Default address for local development
 const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-// USDT contract address (replace with actual USDT address for each network)
-const USDT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// USDC contract address (replace with actual USDC address for each network)
+const USDC_ADDRESS = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
 
 export async function getEventTicketingContract(): Promise<EventTicketing> {
   const signer = await getSigner();
@@ -20,8 +21,8 @@ export async function getEventTicketingContract(): Promise<EventTicketing> {
   return contract;
 }
 
-// Additional function to get USDT contract instance
-export async function getUsdtContract(): Promise<ERC20> {
+// Additional function to get USDC contract instance
+export async function getUsdcContract(): Promise<ERC20> {
   const signer = await getSigner();
   if (!signer) {
     throw new Error("Signer is not available");
@@ -37,7 +38,7 @@ export async function getUsdtContract(): Promise<ERC20> {
   ];
 
   return new ethers.Contract(
-    USDT_ADDRESS,
+    USDC_ADDRESS,
     erc20Abi,
     signer
   ) as unknown as ERC20;

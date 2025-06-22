@@ -1,9 +1,11 @@
 import { fakerPT_BR as faker } from "@faker-js/faker";
 import { ethers } from "hardhat";
-import { EventTicketing__factory } from "@event_ticketing/abi-types/src/factories/EventTicketing__factory";
-import { EventTicketing } from "@event_ticketing/abi-types/src/contracts/EventTicketing";
-import { MockUSDC__factory } from "@event_ticketing/abi-types/src/factories/contracts/MockUSDC__factory";
-import { MockUSDC } from "@event_ticketing/abi-types/src/contracts/MockUSDC";
+import {
+  EventTicketing__factory,
+  EventTicketing,
+  MockUSDC__factory,
+  MockUSDC,
+} from "@event_ticketing/abi-types";
 
 // Types for better code organization
 type EventParams = {
@@ -77,8 +79,8 @@ async function deployContracts(deployer: any) {
   console.log(`✅ MockUSDC deployed to: ${address}`);
 
   // Deploy EventTicketing
-  const EventTicketing = await new EventTicketing__factory(deployer);
-  const eventTicketing = await EventTicketing.deploy();
+  const EventTicketing = new EventTicketing__factory(deployer);
+  const eventTicketing = await EventTicketing.deploy(await usdc.getAddress());
   await eventTicketing.waitForDeployment();
   console.log(
     `✅ EventTicketing deployed to: ${await eventTicketing.getAddress()}`

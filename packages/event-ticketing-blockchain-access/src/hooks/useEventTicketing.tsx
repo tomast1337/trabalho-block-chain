@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { EventTicketing } from "@event_ticketing/abi-types";
 import {
   getEventTicketingContract,
-  getUsdtContract,
+  getUsdcContract,
 } from "../contracts/eventTicketing";
 import { BrowserProvider, JsonRpcSigner } from "ethers";
 
@@ -56,7 +56,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const [eventTicketing, usdt] = await Promise.all([
           getEventTicketingContract(),
-          getUsdtContract(),
+          getUsdcContract(),
         ]);
         setContracts({
           eventTicketing,
