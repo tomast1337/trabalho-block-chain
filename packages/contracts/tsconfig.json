@@ -9,10 +9,5 @@
         "skipLibCheck": true,
         "resolveJsonModule": true,
         "baseUrl": ".",
-        "paths": {
-            "@abi-types/*": [
-                "../abi-types/src/*"
-            ]
-        }
     }
 }
