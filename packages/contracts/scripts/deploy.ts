@@ -126,45 +126,48 @@ async function createSampleEvents(
   console.log(`⏱ Current block timestamp: ${currentBlockTimestamp}`);
 
   for (const organizer of organizers) {
-    const eventData = generateEventData();
+    const num_events = faker.number.int({ min: 2, max: 6 });
+    for (let i = 0; i < num_events; i++) {
+      const eventData = generateEventData();
 
-    try {
-      // Ensure the date is in the future relative to blockchain time
-      const eventTimestamp =
-        currentBlockTimestamp +
-        BigInt(60 * 60 * 24 * 7) + // 7 days in future
-        BigInt(faker.number.int({ min: 1, max: 180 }) * 24 * 60 * 60) + // add between 1 and 180 days
-        BigInt(300); // 5-minute buffer
+      try {
+        // Ensure the date is in the future relative to blockchain time
+        const eventTimestamp =
+          currentBlockTimestamp +
+          BigInt(60 * 60 * 24 * 7) + // 7 days in future
+          BigInt(faker.number.int({ min: 1, max: 180 }) * 24 * 60 * 60) + // add between 1 and 180 days
+          BigInt(300); // 5-minute buffer
 
-      console.log(
-        `⏳ Creating event with date: ${new Date(
-          Number(eventTimestamp) * 1000
-        ).toLocaleString()}`
-      );
-
-      const tx = await eventTicketing
-        .connect(organizer)
-        .createEvent(
-          eventData.name,
-          eventData.description,
-          ethers.parseUnits(eventData.ticketPrice, 6),
-          eventData.maxTickets,
-          eventTimestamp
+        console.log(
+          `⏳ Creating event with date: ${new Date(
+            Number(eventTimestamp) * 1000
+          ).toLocaleString()}`
         );
 
-      await tx.wait();
-      console.log(`🎟 Created event: ${eventData.name}`);
-      console.log(
-        `   📅 ${new Date(Number(eventTimestamp) * 1000).toLocaleDateString()}`
-      );
-      console.log(`   💵 $${eventData.ticketPrice} USDC`);
-      console.log(`   🎫 ${eventData.maxTickets} tickets available`);
-      console.log(`   👤 Organizer: ${organizer.address}\n`);
-    } catch (error: unknown) {
-      console.error(
-        `❌ Failed to create event for ${organizer.address}:`,
-        error instanceof Error ? error.message : String(error)
-      );
+        const tx = await eventTicketing
+          .connect(organizer)
+          .createEvent(
+            eventData.name,
+            eventData.description,
+            ethers.parseUnits(eventData.ticketPrice, 6),
+            eventData.maxTickets,
+            eventTimestamp
+          );
+
+        await tx.wait();
+        console.log(
+          `🎟 Created event: ${eventData.name}, 📅 ${new Date(
+            Number(eventTimestamp) * 1000
+          ).toLocaleDateString()}, 💵 $${eventData.ticketPrice} USDC, 🎫 ${
+            eventData.maxTickets
+          } tickets available, 👤 Organizer: ${organizer.address}\n`
+        );
+      } catch (error: unknown) {
+        console.error(
+          `❌ Failed to create event for ${organizer.address}:`,
+          error instanceof Error ? error.message : String(error)
+        );
+      }
     }
   }
 }
