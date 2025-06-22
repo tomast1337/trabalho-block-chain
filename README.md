@@ -30,59 +30,35 @@
 
 ## Development Workflow
 
-### 1. Start Local Blockchain
-
-In one terminal:
-
-```bash
-pnpm chain
-```
-
-This starts a local Hardhat network at `http://127.0.0.1:8545`
-
-### 2. Compile and Deploy Contracts
-
-In another terminal:
-
-```bash
-pnpm compile
-pnpm deploy:local
-```
-
-This will:
-
-- Compile your Solidity contracts
-- Deploy them to the local network
-- Generate TypeScript types in `packages/abi-types`
-
-### 3. Run Frontend Development Server
-
-In another terminal:
+To start the complete development environment, which includes the local blockchain, contract deployment, and the frontend server, run:
 
 ```bash
 pnpm dev
 ```
 
-This starts the React frontend at `http://localhost:5173`
+This single command will:
+
+- Start a local Hardhat network at `http://127.0.0.1:8545`.
+- Compile and deploy your smart contracts to the local network.
+- Generate TypeScript types in `packages/abi-types`.
+- Start the React frontend at `http://localhost:5173`.
 
 ## Available Commands
 
-| Command             | Description                              |
-| ------------------- | ---------------------------------------- |
-| `pnpm install`      | Install all dependencies                 |
-| `pnpm dev`          | Start frontend and blockchain (parallel) |
-| `pnpm chain`        | Start local Hardhat network              |
-| `pnpm compile`      | Compile smart contracts                  |
-| `pnpm test`         | Run contract tests                       |
-| `pnpm test:watch`   | Run tests in watch mode                  |
-| `pnpm coverage`     | Generate test coverage report            |
-| `pnpm deploy:local` | Deploy contracts to local network        |
-| `pnpm typechain`    | Generate TypeScript types from contracts |
-| `pnpm build`        | Build frontend for production            |
+| Command             | Description                                                     |
+| :------------------ | :-------------------------------------------------------------- |
+| `pnpm install`      | Install all dependencies                                        |
+| `pnpm dev`          | Start the complete development environment (backend & frontend) |
+| `pnpm dev:backend`  | Start local blockchain and deploy contracts                     |
+| `pnpm dev:frontend` | Start the frontend development server                           |
+| `pnpm compile`      | Compile smart contracts and generate types                      |
+| `pnpm test`         | Run smart contract tests                                        |
+| `pnpm coverage`     | Generate test coverage report for contracts                     |
+| `pnpm build`        | Build the frontend for production                               |
 
 ## Testing
 
-Run the complete test suite:
+Run the complete test suite for the smart contracts:
 
 ```bash
 pnpm test
@@ -98,14 +74,14 @@ pnpm coverage
 
 ### TypeChain Types Not Generating
 
-- Run `pnpm clean` then `pnpm compile`
-- Verify if `packages/abi-types/src/` exists
+- Run `pnpm clean` in the `packages/contracts` directory, then `pnpm compile`.
+- Verify if `packages/abi-types/src/` exists.
 
 ### Frontend Not Connecting
 
-- Ensure MetaMask is connected to Localhost 8545
-- Check contract address in frontend code matches deployment
+- Ensure MetaMask is connected to `Localhost 8545`.
+- Check that the contract addresses in the frontend code match the deployment output in your terminal.
 
 ### Transactions Failing
 
-- Reset your local blockchain (`pnpm chain --reset`)
+- Restart the development server (`pnpm dev`) to get a fresh blockchain instance.

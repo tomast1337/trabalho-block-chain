@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "pnpm --parallel --stream dev",
+    "dev:backend": "pnpm --filter \"./packages/contracts\" dev",
+    "dev:frontend": "pnpm --filter \"./apps/frontend\" dev",
     "build": "pnpm --filter \"./apps/frontend\" build",
-    "chain": "pnpm --filter \"./packages/contracts\" chain",
-    "deploy": "pnpm --filter \"./packages/contracts\" deploy:local",
     "compile": "pnpm --filter \"./packages/contracts\" compile",
-    "test": "pnpm --filter \"./packages/contracts\" test"
+    "test": "pnpm --filter \"./packages/contracts\" test",
+    "coverage": "pnpm --filter \"./packages/contracts\" coverage"
   },
   "workspaces": [
     "apps/*",
