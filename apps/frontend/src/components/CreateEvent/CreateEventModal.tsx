@@ -12,15 +12,15 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import zod from "zod";
-import { Button } from "../components/ui/button";
-import { Calendar } from "../components/ui/calendar";
+import { Button } from "../ui/button";
+import { Calendar } from "../ui/calendar";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from "../ui/dialog";
 import {
   Form,
   FormControl,
@@ -28,9 +28,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../components/ui/form";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
+} from "../ui/form";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 const eventSchema = zod.object({
   name: zod.string().min(1, "Event name is required"),
@@ -67,12 +67,14 @@ export const CreateEventModal: React.FC<{
 
   useEffect(() => {
     const fetchBlockTimestamp = async () => {
-      if (eventTicketing) {
+      if (eventTicketing?.runner?.provider) {
         try {
           setBlockTimestampLoading(true);
           setBlockTimestampError(null);
-          const block = await eventTicketing.getBlockTimestamp();
-          setBlockTimestamp(block);
+          const block = await eventTicketing.runner.provider.getBlock("latest");
+          if (block) {
+            setBlockTimestamp(BigInt(block.timestamp));
+          }
         } catch (error) {
           console.error("Error fetching block timestamp:", error);
           setBlockTimestampError("Failed to fetch blockchain time");
@@ -114,9 +116,9 @@ export const CreateEventModal: React.FC<{
         await eventTicketing.createEvent(
           data.name,
           data.description,
-          Math.floor(new Date(data.eventDate).getTime() / 1000),
+          data.ticketPrice * 1e6,
           data.totalTickets,
-          data.ticketPrice * 1e6
+          Math.floor(new Date(data.eventDate).getTime() / 1000)
         );
         toast.success("Event created successfully!");
         onOpenChange(false);

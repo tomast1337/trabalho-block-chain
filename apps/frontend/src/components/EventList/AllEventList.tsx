@@ -3,7 +3,7 @@ import { Ban, CalendarArrowUp, LoaderCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { EventCard, type Event } from "./EventCard";
 
-export const EventList: React.FC = () => {
+export const AllEventList: React.FC = () => {
   const { eventTicketing } = useContracts();
   const [data, setData] = useState<{
     events: Event[];
@@ -20,68 +20,50 @@ export const EventList: React.FC = () => {
     loading: true,
   });
 
-  const fetchEvents = async () => {
-    if (!eventTicketing) return;
-    const { page, limit } = data;
-    try {
-      const eventCount: bigint = await eventTicketing.eventCount();
-      setData((prev) => ({
-        ...prev,
-        loading: true,
-        error: undefined,
-        totalEvents: eventCount,
-      }));
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!eventTicketing) return;
 
-      // Fetch paginated events
-      const [eventIds, names, isFinished] =
-        await eventTicketing.getEventsPaginated(
-          page,
-          limit,
-          true // only active events
+      setData((prev) => ({ ...prev, loading: true, error: undefined }));
+
+      try {
+        const [eventInfos, total] = await eventTicketing.getEventsPaginated(
+          data.page,
+          data.limit,
+          true // Only active events
         );
 
-      // Fetch details for each event
-      const eventDetailsPromises = eventIds.map(async (id, index) => {
-        const details = await eventTicketing.getEventDetails(id);
-        return {
-          id,
-          organizer: details.organizer,
-          name: names[index],
-          description: details.description,
-          ticketPrice: details.ticketPrice,
-          totalTickets: details.totalTickets,
-          ticketsSold: details.ticketsSold,
-          eventDate: details.eventDate,
-          isEventOver: isFinished[index],
-        };
-      });
+        const fetchedEvents: Event[] = eventInfos.map((info) => ({
+          id: info.id,
+          organizer: info.organizer,
+          name: info.name,
+          description: info.description,
+          ticketPrice: info.ticketPrice,
+          totalTickets: info.totalTickets,
+          ticketsSold: info.ticketsSold,
+          eventDate: info.eventDate,
+          isEventOver: info.isEventOver,
+        }));
 
-      const fetchedEvents = await Promise.all(eventDetailsPromises);
-      setData((prev) => ({
-        ...prev,
-        events: [...events, ...fetchedEvents],
-        page,
-        limit,
-      }));
-    } catch (err) {
-      console.error("Error fetching events:", err);
-      setData((prev) => ({
-        ...prev,
-        loading: false,
-        error: "Failed to fetch events. Please try again later.",
-      }));
-    } finally {
-      setData((prev) => ({
-        ...prev,
-        loading: false,
-      }));
-    }
-  };
+        setData((prev) => ({
+          ...prev,
+          events: [...prev.events, ...fetchedEvents],
+          totalEvents: total,
+          loading: false,
+        }));
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        setData((prev) => ({
+          ...prev,
+          loading: false,
+          error: "Failed to fetch events. Please try again later.",
+        }));
+      }
+    };
 
-  useEffect(() => {
     fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventTicketing]);
+  }, [eventTicketing, data.page]);
 
   const { events, error, loading } = data;
   return (

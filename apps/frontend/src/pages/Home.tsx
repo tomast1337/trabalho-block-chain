@@ -1,7 +1,7 @@
-import { CreateEventButton } from "@/CreateEvent/CreateEvent";
+import { CreateEventButton } from "@/components/CreateEvent/CreateEvent";
 import { CalendarArrowUp } from "lucide-react";
 import React from "react";
-import { EventList } from "../components/EventList";
+import { AllEventList } from "../components/EventList/AllEventList";
 
 export const Home: React.FC = () => {
   return (
@@ -11,7 +11,7 @@ export const Home: React.FC = () => {
         Up Coming Events{" "}
         <CalendarArrowUp className="inline-block ml-2 text-shadow-accent-foreground w-8 h-8" />
       </h1>
-      <EventList />
+      <AllEventList />
     </div>
   );
 };
