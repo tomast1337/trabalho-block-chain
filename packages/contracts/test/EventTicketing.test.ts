@@ -54,6 +54,23 @@ describe("EventTicketing", () => {
       expect(await eventTicketing.owner()).to.equal(owner.address);
     });
 
+    it("Should allow the owner to set a new owner", async () => {
+      const { eventTicketing, owner, otherAccount } = await loadFixture(
+        deployEventTicketingFixture
+      );
+      await eventTicketing.connect(owner).setOwner(otherAccount.address);
+      expect(await eventTicketing.owner()).to.equal(otherAccount.address);
+    });
+
+    it("Should not allow non-owner to set new owner", async () => {
+      const { eventTicketing, otherAccount } = await loadFixture(
+        deployEventTicketingFixture
+      );
+      await expect(
+        eventTicketing.connect(otherAccount).setOwner(otherAccount.address)
+      ).to.be.revertedWith("Only owner can call this function");
+    });
+
     it("Should have zero events initially", async () => {
       const { eventTicketing } = await loadFixture(deployEventTicketingFixture);
       expect(await eventTicketing.eventCount()).to.equal(0);
@@ -697,19 +714,28 @@ describe("EventTicketing", () => {
         await eventTicketing.connect(organizer).withdrawFunds(1);
         await eventTicketing.connect(organizer).withdrawFunds(2);
 
-        const [eventIds, names, isFinished, total] =
-          await eventTicketing.getEventsPaginated(0, 10, false);
+        const [eventInfos, total] = await eventTicketing.getEventsPaginated(
+          0,
+          10,
+          false
+        );
 
         expect(total).to.equal(5); // Total count includes all events
-        expect(eventIds).to.have.lengthOf(5); // All events returned
-        expect(names).to.deep.equal([
+        expect(eventInfos).to.have.lengthOf(5); // All events returned
+        expect(eventInfos.map((e) => e.name)).to.deep.equal([
           "Event 1",
           "Event 2",
           "Event 3",
           "Event 4",
           "Event 5",
         ]);
-        expect(isFinished).to.deep.equal([true, true, false, false, false]);
+        expect(eventInfos.map((e) => e.isEventOver)).to.deep.equal([
+          true,
+          true,
+          false,
+          false,
+          false,
+        ]);
       });
 
       it("Should return only active events when filtered", async () => {
@@ -723,13 +749,24 @@ describe("EventTicketing", () => {
         await eventTicketing.connect(organizer).withdrawFunds(1);
         await eventTicketing.connect(organizer).withdrawFunds(2);
 
-        const [eventIds, names, isFinished, total] =
-          await eventTicketing.getEventsPaginated(0, 10, true);
+        const [eventInfos, total] = await eventTicketing.getEventsPaginated(
+          0,
+          10,
+          true
+        );
 
-        expect(total).to.equal(5); // Only active events
-        expect(eventIds).to.have.lengthOf(3); // Only active events returned
-        expect(names).to.deep.equal(["Event 3", "Event 4", "Event 5"]);
-        expect(isFinished).to.deep.equal([false, false, false]);
+        expect(total).to.equal(5); // Total count is still all events
+        expect(eventInfos).to.have.lengthOf(3); // Only active events returned
+        expect(eventInfos.map((e) => e.name)).to.deep.equal([
+          "Event 3",
+          "Event 4",
+          "Event 5",
+        ]);
+        expect(eventInfos.map((e) => e.isEventOver)).to.deep.equal([
+          false,
+          false,
+          false,
+        ]);
       });
 
       it("Should handle pagination correctly", async () => {
@@ -738,31 +775,37 @@ describe("EventTicketing", () => {
         );
 
         // First page (2 items)
-        const [page1Ids, page1Names] = await eventTicketing.getEventsPaginated(
+        const [page1Infos] = await eventTicketing.getEventsPaginated(
           0,
           2,
           false
         );
-        expect(page1Ids).to.have.lengthOf(2);
-        expect(page1Names).to.deep.equal(["Event 1", "Event 2"]);
+        expect(page1Infos).to.have.lengthOf(2);
+        expect(page1Infos.map((e) => e.name)).to.deep.equal([
+          "Event 1",
+          "Event 2",
+        ]);
 
         // Second page (2 items)
-        const [page2Ids, page2Names] = await eventTicketing.getEventsPaginated(
+        const [page2Infos] = await eventTicketing.getEventsPaginated(
           1,
           2,
           false
         );
-        expect(page2Ids).to.have.lengthOf(2);
-        expect(page2Names).to.deep.equal(["Event 3", "Event 4"]);
+        expect(page2Infos).to.have.lengthOf(2);
+        expect(page2Infos.map((e) => e.name)).to.deep.equal([
+          "Event 3",
+          "Event 4",
+        ]);
 
         // Third page (1 item)
-        const [page3Ids, page3Names] = await eventTicketing.getEventsPaginated(
+        const [page3Infos] = await eventTicketing.getEventsPaginated(
           2,
           2,
           false
         );
-        expect(page3Ids).to.have.lengthOf(1);
-        expect(page3Names).to.deep.equal(["Event 5"]);
+        expect(page3Infos).to.have.lengthOf(1);
+        expect(page3Infos.map((e) => e.name)).to.deep.equal(["Event 5"]);
       });
 
       it("Should return empty arrays for out-of-bounds pages", async () => {
@@ -770,13 +813,12 @@ describe("EventTicketing", () => {
           deployWithMultipleEventsFixture
         );
 
-        const [eventIds, names] = await eventTicketing.getEventsPaginated(
+        const [eventInfos] = await eventTicketing.getEventsPaginated(
           2,
           10,
           false
         );
-        expect(eventIds).to.have.lengthOf(0);
-        expect(names).to.have.lengthOf(0);
+        expect(eventInfos).to.have.lengthOf(0);
       });
 
       it("Should combine pagination with active filter correctly", async () => {
@@ -790,25 +832,133 @@ describe("EventTicketing", () => {
         await eventTicketing.connect(organizer).withdrawFunds(1);
         await eventTicketing.connect(organizer).withdrawFunds(2);
 
-        // First page of active events (2 items)
-        const [page1Ids, page1Names] = await eventTicketing.getEventsPaginated(
+        // First page of active events (page size 3) - should return 1 event
+        const [page1Infos] = await eventTicketing.getEventsPaginated(
           0,
-          2,
-          false
+          3,
+          true
         );
 
-        expect(page1Ids).to.have.lengthOf(2);
-        expect(page1Names).to.deep.equal(["Event 1", "Event 2"]);
+        expect(page1Infos).to.have.lengthOf(1);
+        expect(page1Infos.map((e) => e.name)).to.deep.equal(["Event 3"]);
 
-        // Second page of active events (1 item)
-        const [page2Ids, page2Names] = await eventTicketing.getEventsPaginated(
+        // Second page of active events (page size 3) - should return 2 events
+        const [page2Infos] = await eventTicketing.getEventsPaginated(
           1,
-          2,
-          false
+          3,
+          true
         );
 
-        expect(page2Ids).to.have.lengthOf(2);
-        expect(page2Names).to.deep.equal(["Event 3", "Event 4"]);
+        expect(page2Infos).to.have.lengthOf(2);
+        expect(page2Infos.map((e) => e.name)).to.deep.equal([
+          "Event 4",
+          "Event 5",
+        ]);
+      });
+    });
+
+    describe("getEventsByOrganizer", () => {
+      it("Should return all events created by a specific organizer", async () => {
+        const { eventTicketing, organizer } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const organizerEvents = await eventTicketing.getEventsByOrganizer(
+          organizer.address
+        );
+
+        expect(organizerEvents).to.have.lengthOf(5);
+        expect(organizerEvents.map((e) => e.name)).to.deep.equal([
+          "Event 1",
+          "Event 2",
+          "Event 3",
+          "Event 4",
+          "Event 5",
+        ]);
+        organizerEvents.forEach((event) => {
+          expect(event.organizer).to.equal(organizer.address);
+        });
+      });
+
+      it("Should return an empty array for an organizer with no events", async () => {
+        const { eventTicketing, otherAccount } = await loadFixture(
+          deployWithMultipleEventsFixture
+        );
+
+        const otherAccountEvents = await eventTicketing.getEventsByOrganizer(
+          otherAccount.address
+        );
+
+        expect(otherAccountEvents).to.have.lengthOf(0);
+      });
+
+      it("Should return correct events when multiple organizers exist", async () => {
+        const {
+          eventTicketing,
+          organizer,
+          otherAccount,
+          eventDate,
+          TICKET_PRICE,
+        } = await loadFixture(deployWithMultipleEventsFixture);
+
+        // Create 2 events with another organizer
+        await eventTicketing.connect(otherAccount).createEvent(
+          "Other Event 1",
+          "Description Other 1",
+          TICKET_PRICE,
+          50,
+          eventDate + 86400 * 6 // +6 days
+        );
+        await eventTicketing.connect(otherAccount).createEvent(
+          "Other Event 2",
+          "Description Other 2",
+          TICKET_PRICE,
+          50,
+          eventDate + 86400 * 7 // +7 days
+        );
+
+        // Check original organizer's events
+        const organizerEvents = await eventTicketing.getEventsByOrganizer(
+          organizer.address
+        );
+        expect(organizerEvents).to.have.lengthOf(5);
+
+        // Check other organizer's events
+        const otherAccountEvents = await eventTicketing.getEventsByOrganizer(
+          otherAccount.address
+        );
+        expect(otherAccountEvents).to.have.lengthOf(2);
+        expect(otherAccountEvents.map((e) => e.name)).to.deep.equal([
+          "Other Event 1",
+          "Other Event 2",
+        ]);
+        expect(otherAccountEvents[0].organizer).to.equal(otherAccount.address);
+        expect(otherAccountEvents[1].organizer).to.equal(otherAccount.address);
+      });
+
+      it("Should return correct and complete event details", async () => {
+        const {
+          eventTicketing,
+          organizer,
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          event1Date,
+        } = await loadFixture(deployWithMultipleEventsFixture);
+
+        const organizerEvents = await eventTicketing.getEventsByOrganizer(
+          organizer.address
+        );
+        const firstEvent = organizerEvents[0];
+
+        expect(firstEvent.id).to.equal(1);
+        expect(firstEvent.organizer).to.equal(organizer.address);
+        expect(firstEvent.name).to.equal("Event 1");
+        expect(firstEvent.description).to.equal("Description 1");
+        expect(firstEvent.ticketPrice).to.equal(TICKET_PRICE);
+        expect(firstEvent.totalTickets).to.equal(TOTAL_TICKETS);
+        expect(firstEvent.ticketsSold).to.equal(3); // from fixture setup
+        expect(firstEvent.eventDate).to.equal(event1Date);
+        expect(firstEvent.isEventOver).to.be.false;
       });
     });
 

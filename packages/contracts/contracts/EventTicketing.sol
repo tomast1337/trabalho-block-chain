@@ -62,6 +62,10 @@ contract EventTicketing {
         _;
     }
 
+    function setOwner(address _newOwner) external onlyOwner {
+        owner = _newOwner;
+    }
+
     constructor(address _usdcAddress) {
         owner = msg.sender;
         usdcToken = IERC20(_usdcAddress);
@@ -241,63 +245,94 @@ contract EventTicketing {
         return (eventIds, ticketCounts, eventCount);
     }
 
+    struct EventInfo {
+        uint256 id;
+        address organizer;
+        string name;
+        string description;
+        uint256 ticketPrice;
+        uint256 totalTickets;
+        uint256 ticketsSold;
+        uint256 eventDate;
+        bool isEventOver;
+    }
+
     function getEventsPaginated(
-        uint256 _page, // Page number starting from 0
-        uint256 _pageSize, // Number of events per page
-        bool _onlyActive // When true, returns only active (not finished) events
-    )
-        external
-        view
-        returns (
-            uint256[] memory eventIds,
-            string[] memory names,
-            bool[] memory isFinished,
-            uint256 totalEvents
-        )
-    {
-        // Calculate the range of events to scan
-        uint256 start = _page * _pageSize + 1; // Event IDs start at 1
+        uint256 _page,
+        uint256 _pageSize,
+        bool _onlyActive
+    ) external view returns (EventInfo[] memory, uint256) {
+        uint256 start = _page * _pageSize + 1;
         uint256 end = start + _pageSize;
 
-        // Adjust end if it exceeds total event count
         if (end > eventCount + 1) {
             end = eventCount + 1;
         }
 
-        // Temporary arrays with maximum possible size
-        uint256[] memory tmpEventIds = new uint256[](_pageSize);
-        string[] memory tmpNames = new string[](_pageSize);
-        bool[] memory tmpIsFinished = new bool[](_pageSize);
-        uint256 found = 0;
+        EventInfo[] memory infos = new EventInfo[](
+            end > start ? end - start : 0
+        );
+        uint256 count = 0;
 
-        // Scan only the target page range
         for (uint256 i = start; i < end; i++) {
-            Event storage e = events[i];
-
-            // Skip if filtering for active events and this event is finished
-            if (_onlyActive && e.isEventOver) {
-                continue;
+            if (!_onlyActive || !events[i].isEventOver) {
+                Event storage e = events[i];
+                infos[count] = EventInfo({
+                    id: i,
+                    organizer: e.organizer,
+                    name: e.name,
+                    description: e.description,
+                    ticketPrice: e.ticketPrice,
+                    totalTickets: e.totalTickets,
+                    ticketsSold: e.ticketsSold,
+                    eventDate: e.eventDate,
+                    isEventOver: e.isEventOver
+                });
+                count++;
             }
-
-            tmpEventIds[found] = i;
-            tmpNames[found] = e.name;
-            tmpIsFinished[found] = e.isEventOver;
-            found++;
         }
 
-        // Create properly sized arrays for the results
-        eventIds = new uint256[](found);
-        names = new string[](found);
-        isFinished = new bool[](found);
-
-        // Copy the relevant items
-        for (uint256 j = 0; j < found; j++) {
-            eventIds[j] = tmpEventIds[j];
-            names[j] = tmpNames[j];
-            isFinished[j] = tmpIsFinished[j];
+        if (count < infos.length) {
+            EventInfo[] memory result = new EventInfo[](count);
+            for (uint256 i = 0; i < count; i++) {
+                result[i] = infos[i];
+            }
+            return (result, eventCount);
         }
 
-        return (eventIds, names, isFinished, eventCount);
+        return (infos, eventCount);
+    }
+
+    function getEventsByOrganizer(
+        address _organizer
+    ) external view returns (EventInfo[] memory) {
+        uint256 totalUserEvents = 0;
+        for (uint256 i = 1; i <= eventCount; i++) {
+            if (events[i].organizer == _organizer) {
+                totalUserEvents++;
+            }
+        }
+
+        EventInfo[] memory userEvents = new EventInfo[](totalUserEvents);
+        uint256 currentUserEventIndex = 0;
+        for (uint256 i = 1; i <= eventCount; i++) {
+            if (events[i].organizer == _organizer) {
+                Event storage e = events[i];
+                userEvents[currentUserEventIndex] = EventInfo({
+                    id: i,
+                    organizer: e.organizer,
+                    name: e.name,
+                    description: e.description,
+                    ticketPrice: e.ticketPrice,
+                    totalTickets: e.totalTickets,
+                    ticketsSold: e.ticketsSold,
+                    eventDate: e.eventDate,
+                    isEventOver: e.isEventOver
+                });
+                currentUserEventIndex++;
+            }
+        }
+        return userEvents;
     }
 
     // Returns remaining tickets
@@ -312,10 +347,6 @@ contract EventTicketing {
     function isEventActive(uint256 _eventId) external view returns (bool) {
         Event storage e = events[_eventId];
         return !e.isEventOver && block.timestamp < e.eventDate;
-    }
-
-    function getBlockTimestamp() external view returns (uint256) {
-        return block.timestamp;
     }
 
     receive() external payable {
