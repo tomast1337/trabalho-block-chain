@@ -5,7 +5,7 @@ import {
   EventTicketing,
   MockUSDC__factory,
   MockUSDC,
-} from "@event_ticketing/abi-types";
+} from "@event_ticketing/abi-types/src/";
 
 // Types for better code organization
 type EventParams = {

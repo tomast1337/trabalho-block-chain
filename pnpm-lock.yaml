@@ -159,9 +159,6 @@ importers:
       '@typechain/hardhat':
         specifier: ^9.1.0
         version: 9.1.0(@typechain/ethers-v6@0.5.1(ethers@6.14.3)(typechain@8.3.2(typescript@5.8.3))(typescript@5.8.3))(ethers@6.14.3)(hardhat@2.24.1(ts-node@10.9.2(@types/node@22.15.23)(typescript@5.8.3))(typescript@5.8.3))(typechain@8.3.2(typescript@5.8.3))
-      tsc:
-        specifier: ^2.0.4
-        version: 2.0.4
       typechain:
         specifier: ^8.3.2
         version: 8.3.2(typescript@5.8.3)
@@ -198,9 +195,6 @@ importers:
       hardhat:
         specifier: ^2.24.1
         version: 2.24.1(ts-node@10.9.2(@types/node@22.15.23)(typescript@5.8.3))(typescript@5.8.3)
-      hardhat-chai-matchers:
-        specifier: link:@nomicfoundation/hardhat-chai-matchers
-        version: link:@nomicfoundation/hardhat-chai-matchers
       hardhat-gas-reporter:
         specifier: ^2.2.3
         version: 2.2.3(hardhat@2.24.1(ts-node@10.9.2(@types/node@22.15.23)(typescript@5.8.3))(typescript@5.8.3))(typescript@5.8.3)(zod@3.25.30)
@@ -3532,10 +3526,6 @@ packages:
         optional: true
       '@swc/wasm':
         optional: true
-
-  tsc@2.0.4:
-    resolution: {integrity: sha512-fzoSieZI5KKJVBYGvwbVZs/J5za84f2lSTLPYf6AGiIf43tZ3GNrI1QzTLcjtyDDP4aLxd46RTZq1nQxe7+k5Q==}
-    hasBin: true
 
   tslib@1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
@@ -7364,8 +7354,6 @@ snapshots:
       typescript: 5.8.3
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
-
-  tsc@2.0.4: {}
 
   tslib@1.14.1: {}
 

@@ -1,4 +1,4 @@
-import type { EventTicketing, MockUSDC } from "@event_ticketing/abi-types";
+import type { EventTicketing, MockUSDC } from "@event_ticketing/abi-types/src";
 import {
   loadFixture,
   time,

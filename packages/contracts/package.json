@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "hardhat node & hardhat run scripts/deploy.ts --network localhost",
+    "dev": "pnpm --filter @event_ticketing/abi-types build && hardhat node & hardhat run scripts/deploy.ts --network localhost",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:watch": "hardhat test --watch",
@@ -33,7 +33,6 @@
     "@typechain/hardhat": "^9.1.0",
     "dotenv": "^16.5.0",
     "hardhat": "^2.24.1",
-    "hardhat-chai-matchers": "link:@nomicfoundation/hardhat-chai-matchers",
     "hardhat-gas-reporter": "^2.2.3",
     "solidity-coverage": "^0.8.16",
     "typechain": "^8.3.2"

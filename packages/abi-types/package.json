@@ -2,7 +2,7 @@
   "name": "@event_ticketing/abi-types",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -16,7 +16,6 @@
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@typechain/ethers-v5": "^11.1.2",
     "@typechain/hardhat": "^9.1.0",
-    "tsc": "^2.0.4",
     "typechain": "^8.3.2",
     "typescript": "~5.8.3"
   },
