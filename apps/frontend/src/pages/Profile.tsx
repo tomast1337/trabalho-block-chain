@@ -16,6 +16,9 @@ export const Profile: React.FC = () => {
   const [createdEvents, setCreatedEvents] = useState<EventType[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [userAddress, setUserAddress] = useState<string | undefined>();
+  const [ticketsOwned, setTicketsOwned] = useState<Map<string, bigint>>(
+    new Map()
+  );
 
   useEffect(() => {
     const getUserAddress = async () => {
@@ -39,6 +42,25 @@ export const Profile: React.FC = () => {
         const userAddress = await signer.getAddress();
         const events = await eventTicketing.getEventsByOrganizer(userAddress);
         setCreatedEvents(events);
+
+        // Check tickets owned for each event (in case organizer also bought tickets)
+        const ticketsOwnedMap = new Map<string, bigint>();
+        for (const event of events) {
+          try {
+            const tickets = await eventTicketing.getTicketsOwned(
+              event.id,
+              userAddress
+            );
+            ticketsOwnedMap.set(event.id.toString(), tickets);
+          } catch (error) {
+            console.error(
+              `Error getting tickets owned for event ${event.id}:`,
+              error
+            );
+            ticketsOwnedMap.set(event.id.toString(), 0n);
+          }
+        }
+        setTicketsOwned(ticketsOwnedMap);
       } catch (err) {
         console.error("Error fetching profile data:", err);
         setError("Failed to fetch profile data");
@@ -95,6 +117,7 @@ export const Profile: React.FC = () => {
                 event={event}
                 showBuyButton={false}
                 userAddress={userAddress}
+                ticketsOwned={ticketsOwned.get(event.id.toString())}
               />
               {new Date(Number(event.eventDate) * 1000) < new Date() &&
                 !event.isEventOver && (

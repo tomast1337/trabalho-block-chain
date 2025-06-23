@@ -35,6 +35,7 @@ const TicketsList: React.FC<{
               event={event}
               showBuyButton={false}
               userAddress={userAddress}
+              ticketsOwned={event.ticketsOwned}
             />
             <Badge className="absolute -top-3 -right-3 flex items-center gap-1">
               <TicketIcon className="h-4 w-4" />

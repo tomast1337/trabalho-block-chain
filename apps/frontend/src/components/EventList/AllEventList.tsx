@@ -20,6 +20,9 @@ export const AllEventList: React.FC = () => {
     loading: true,
   });
   const [userAddress, setUserAddress] = useState<string | undefined>();
+  const [ticketsOwned, setTicketsOwned] = useState<Map<string, bigint>>(
+    new Map()
+  );
 
   useEffect(() => {
     const getUserAddress = async () => {
@@ -60,6 +63,27 @@ export const AllEventList: React.FC = () => {
           isEventOver: info.isEventOver,
         }));
 
+        // Check tickets owned for each event
+        if (userAddress) {
+          const ticketsOwnedMap = new Map<string, bigint>();
+          for (const event of fetchedEvents) {
+            try {
+              const tickets = await eventTicketing.getTicketsOwned(
+                event.id,
+                userAddress
+              );
+              ticketsOwnedMap.set(event.id.toString(), tickets);
+            } catch (error) {
+              console.error(
+                `Error getting tickets owned for event ${event.id}:`,
+                error
+              );
+              ticketsOwnedMap.set(event.id.toString(), 0n);
+            }
+          }
+          setTicketsOwned(ticketsOwnedMap);
+        }
+
         setData((prev) => ({
           ...prev,
           events: [...prev.events, ...fetchedEvents],
@@ -78,7 +102,7 @@ export const AllEventList: React.FC = () => {
 
     fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventTicketing, data.page]);
+  }, [eventTicketing, data.page, userAddress]);
 
   const { events, error, loading } = data;
   return (
@@ -106,6 +130,7 @@ export const AllEventList: React.FC = () => {
                 key={event.id.toString()}
                 event={event}
                 userAddress={userAddress}
+                ticketsOwned={ticketsOwned.get(event.id.toString())}
               />
             ))}
           </div>

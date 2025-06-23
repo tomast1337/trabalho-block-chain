@@ -22,7 +22,8 @@ export const EventCard: React.FC<{
   event: Event;
   showBuyButton?: boolean;
   userAddress?: string;
-}> = ({ event, showBuyButton = true, userAddress }) => {
+  ticketsOwned?: bigint;
+}> = ({ event, showBuyButton = true, userAddress, ticketsOwned }) => {
   const { checkAllowance, approve, buyTicket, signer, eventTicketing } =
     useEventTicketing();
   const [buttonState, setButtonState] = useState<
@@ -37,6 +38,7 @@ export const EventCard: React.FC<{
 
   const isUserEvent =
     userAddress && event.organizer.toLowerCase() === userAddress.toLowerCase();
+  const hasTickets = ticketsOwned && ticketsOwned > 0n;
 
   useEffect(() => {
     const checkNeedsApproval = async () => {
@@ -104,7 +106,7 @@ export const EventCard: React.FC<{
   };
 
   const renderButton = () => {
-    if (!showBuyButton) {
+    if (!showBuyButton || hasTickets) {
       return null;
     }
 
@@ -155,6 +157,7 @@ export const EventCard: React.FC<{
             </h3>
             <div className="flex gap-2">
               {isUserEvent && <Badge variant="default">Your Event</Badge>}
+              {hasTickets && <Badge variant="secondary">Owned</Badge>}
               {event.isEventOver ? (
                 <Badge variant="destructive">Ended</Badge>
               ) : ticketsAvailable <= 0 ? (
