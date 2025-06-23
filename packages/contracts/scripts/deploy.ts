@@ -58,8 +58,8 @@ const generateEventData = (): EventParams => {
     date: getFutureTimestamp(faker.number.int({ min: 1, max: 180 })), // 1-180 days in future
     ticketPrice: faker.number
       .int({
-        min: 10 * 100000,
-        max: 200 * 100000,
+        min: 10 * 10,
+        max: 200 * 100,
       })
       .toString(),
     maxTickets: faker.helpers.arrayElement([

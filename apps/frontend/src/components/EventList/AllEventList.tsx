@@ -85,15 +85,6 @@ export const AllEventList: React.FC = () => {
               </p>
             </div>
           )}
-          {events.length === 0 && (
-            <div className="text-center py-12">
-              <CalendarArrowUp className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-lg font-medium">No events found</h3>
-              <p className="mt-1 text-gray-500">
-                There are currently no upcoming events.
-              </p>
-            </div>
-          )}
           <div className="max-w-[900px] mx-auto">
             {events.map((event) => (
               <EventCard key={event.id.toString()} event={event} />
