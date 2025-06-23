@@ -34,11 +34,11 @@ export const EventCard: React.FC<{
   const ticketsAvailable =
     Number(event.totalTickets) - Number(event.ticketsSold);
 
-  const totalPrice = event.ticketPrice * BigInt(quantity);
+  const totalPrice = BigInt(event.ticketPrice) * BigInt(quantity);
 
   const isUserEvent =
     userAddress && event.organizer.toLowerCase() === userAddress.toLowerCase();
-  const hasTickets = ticketsOwned && ticketsOwned > 0n;
+  const hasTickets = ticketsOwned && BigInt(ticketsOwned) > 0n;
 
   useEffect(() => {
     const checkNeedsApproval = async () => {
@@ -47,7 +47,8 @@ export const EventCard: React.FC<{
         !eventTicketing ||
         event.isEventOver ||
         ticketsAvailable <= 0 ||
-        !showBuyButton
+        !showBuyButton ||
+        hasTickets
       ) {
         return;
       }
@@ -74,6 +75,7 @@ export const EventCard: React.FC<{
     event.isEventOver,
     ticketsAvailable,
     showBuyButton,
+    hasTickets,
   ]);
 
   const handleApprove = async () => {
@@ -192,7 +194,16 @@ export const EventCard: React.FC<{
           {/* Price and action */}
           <div className="flex justify-between items-center mt-2">
             <span className="text-lg font-bold">
-              ${formatPrice(event.ticketPrice * BigInt(quantity))} USDT
+              $
+              {(() => {
+                try {
+                  return formatPrice(totalPrice);
+                } catch (error) {
+                  console.error("Error formatting price:", error);
+                  return "0.00";
+                }
+              })()}{" "}
+              USDT
             </span>
             <div className="flex items-center gap-2">{renderButton()}</div>
           </div>
