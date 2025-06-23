@@ -1,38 +1,55 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { EventTicketing } from "@event_ticketing/abi-types";
 import {
   getEventTicketingContract,
   getUsdcContract,
 } from "../contracts/eventTicketing";
-import { BrowserProvider, JsonRpcSigner } from "ethers";
+import { BrowserProvider, JsonRpcSigner, MaxUint256 } from "ethers";
+import { MockUSDC } from "@event_ticketing/abi-types/src/contracts/MockUSDC";
 
-interface ContractContextType {
+interface EventTicketingContextType {
   eventTicketing: EventTicketing | null;
-  usdt: ERC20 | null;
+  usdc: MockUSDC | null;
   provider: BrowserProvider | null;
   signer: JsonRpcSigner | null;
   loading: boolean;
   error: Error | null;
+  checkAllowance: (
+    owner: string,
+    spender: string,
+    amount: bigint
+  ) => Promise<boolean>;
+  approve: (spender: string, amount: bigint) => Promise<void>;
+  buyTicket: (eventId: bigint, quantity: bigint) => Promise<void>;
 }
 
-const ContractContext = createContext<ContractContextType>({
+const EventTicketingContext = createContext<EventTicketingContextType>({
   eventTicketing: null,
-  usdt: null,
+  usdc: null,
   provider: null,
   signer: null,
   loading: true,
   error: null,
+  checkAllowance: async () => false,
+  approve: async () => {},
+  buyTicket: async () => {},
 });
 
-export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const EventTicketingProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const [contracts, setContracts] = useState<{
     eventTicketing: EventTicketing | null;
-    usdt: ERC20 | null;
+    usdc: MockUSDC | null;
   }>({
     eventTicketing: null,
-    usdt: null,
+    usdc: null,
   });
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
@@ -42,10 +59,20 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     async function initProviderAndSigner() {
       if (window.ethereum) {
-        const _provider = new BrowserProvider(window.ethereum as any);
-        setProvider(_provider);
-        const _signer = await _provider.getSigner();
-        setSigner(_signer);
+        try {
+          const _provider = new BrowserProvider(window.ethereum as any);
+          setProvider(_provider);
+          const _signer = await _provider.getSigner();
+          setSigner(_signer);
+        } catch (e) {
+          setError(
+            e instanceof Error
+              ? e
+              : new Error("Failed to initialize provider and signer")
+          );
+        }
+      } else {
+        setError(new Error("Ethereum provider not found"));
       }
     }
     initProviderAndSigner();
@@ -53,14 +80,15 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     async function loadContracts() {
+      if (!signer) return;
       try {
-        const [eventTicketing, usdt] = await Promise.all([
-          getEventTicketingContract(),
-          getUsdcContract(),
+        const [eventTicketing, usdc] = await Promise.all([
+          getEventTicketingContract(signer),
+          getUsdcContract(signer),
         ]);
         setContracts({
           eventTicketing,
-          usdt,
+          usdc,
         });
       } catch (err) {
         setError(
@@ -70,22 +98,55 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     }
-    loadContracts();
-  }, []);
+    if (signer) {
+      loadContracts();
+    }
+  }, [signer]);
+
+  const checkAllowance = useCallback(
+    async (owner: string, spender: string, amount: bigint) => {
+      if (!contracts.usdc) throw new Error("USDC contract not loaded");
+      const allowance = await contracts.usdc.allowance(owner, spender);
+      return allowance >= amount;
+    },
+    [contracts.usdc]
+  );
+
+  const approve = useCallback(
+    async (spender: string, amount: bigint) => {
+      if (!contracts.usdc) throw new Error("USDC contract not loaded");
+      const tx = await contracts.usdc.approve(spender, amount);
+      await tx.wait();
+    },
+    [contracts.usdc]
+  );
+
+  const buyTicket = useCallback(
+    async (eventId: bigint, quantity: bigint) => {
+      if (!contracts.eventTicketing)
+        throw new Error("EventTicketing contract not loaded");
+      const tx = await contracts.eventTicketing.buyTicket(eventId, quantity);
+      await tx.wait();
+    },
+    [contracts.eventTicketing]
+  );
 
   return (
-    <ContractContext.Provider
+    <EventTicketingContext.Provider
       value={{
         ...contracts,
         provider,
         signer,
         loading,
         error,
+        checkAllowance,
+        approve,
+        buyTicket,
       }}
     >
       {children}
-    </ContractContext.Provider>
+    </EventTicketingContext.Provider>
   );
 };
 
-export const useContracts = () => useContext(ContractContext);
+export const useEventTicketing = () => useContext(EventTicketingContext);

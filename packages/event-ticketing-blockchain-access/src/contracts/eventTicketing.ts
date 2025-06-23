@@ -4,15 +4,16 @@ import {
   MockUSDC as ERC20,
 } from "@event_ticketing/abi-types";
 import { getSigner } from "../providers/web3Provider";
-import { ethers } from "ethers";
+import { ethers, Signer } from "ethers";
 
 // Default address for local development
 const CONTRACT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 // USDC contract address (replace with actual USDC address for each network)
 const USDC_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
-export async function getEventTicketingContract(): Promise<EventTicketing> {
-  const signer = await getSigner();
+export async function getEventTicketingContract(
+  signer: Signer
+): Promise<EventTicketing> {
   if (!signer) {
     throw new Error("Signer is not available");
   }
@@ -22,8 +23,7 @@ export async function getEventTicketingContract(): Promise<EventTicketing> {
 }
 
 // Additional function to get USDC contract instance
-export async function getUsdcContract(): Promise<ERC20> {
-  const signer = await getSigner();
+export async function getUsdcContract(signer: Signer): Promise<ERC20> {
   if (!signer) {
     throw new Error("Signer is not available");
   }

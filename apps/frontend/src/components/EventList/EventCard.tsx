@@ -1,10 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { format } from "date-fns";
 import { formatUnits } from "ethers";
 import { CalendarIcon, TicketIcon } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export type Event = {
   id: bigint;
@@ -20,6 +22,13 @@ export type Event = {
 export const EventCard: React.FC<{
   event: Event;
 }> = ({ event }) => {
+  const { checkAllowance, approve, buyTicket, signer, eventTicketing } =
+    useEventTicketing();
+  const [buttonState, setButtonState] = useState<
+    "initial" | "needs_approval" | "approved" | "loading"
+  >("initial");
+  const [quantity] = useState(1);
+
   const formatDate = (timestamp: bigint) => {
     return format(new Date(Number(timestamp) * 1000), "MMM dd, yyyy h:mm a");
   };
@@ -30,6 +39,108 @@ export const EventCard: React.FC<{
 
   const ticketsAvailable =
     Number(event.totalTickets) - Number(event.ticketsSold);
+
+  const totalPrice = event.ticketPrice * BigInt(quantity);
+
+  useEffect(() => {
+    const checkNeedsApproval = async () => {
+      if (
+        !signer ||
+        !eventTicketing ||
+        event.isEventOver ||
+        ticketsAvailable <= 0
+      ) {
+        return;
+      }
+      setButtonState("loading");
+      try {
+        const hasEnoughAllowance = await checkAllowance(
+          signer.address,
+          await eventTicketing.getAddress(),
+          totalPrice
+        );
+        setButtonState(hasEnoughAllowance ? "approved" : "needs_approval");
+      } catch (error) {
+        console.error("Error checking allowance:", error);
+        toast.error("Error checking allowance.");
+        setButtonState("initial");
+      }
+    };
+    checkNeedsApproval();
+  }, [
+    signer,
+    eventTicketing,
+    totalPrice,
+    checkAllowance,
+    event.isEventOver,
+    ticketsAvailable,
+  ]);
+
+  const handleApprove = async () => {
+    if (!eventTicketing) return;
+    setButtonState("loading");
+    try {
+      const spender = await eventTicketing.getAddress();
+      await approve(spender, totalPrice);
+      setButtonState("approved");
+      toast.success("Approval successful!");
+    } catch (error) {
+      console.error("Error approving:", error);
+      toast.error("Approval failed.");
+      setButtonState("needs_approval");
+    }
+  };
+
+  const handleBuy = async () => {
+    setButtonState("loading");
+    try {
+      await buyTicket(event.id, BigInt(quantity));
+      toast.success(`Successfully bought ${quantity} ticket(s)!`);
+      // Optionally reset state or refetch data
+      setButtonState("initial"); // Or refetch allowance
+    } catch (error) {
+      console.error("Error buying ticket:", error);
+      toast.error("Ticket purchase failed.");
+      setButtonState("approved"); // Revert to approved state
+    }
+  };
+
+  const renderButton = () => {
+    if (event.isEventOver || ticketsAvailable <= 0) {
+      return (
+        <Button size="sm" disabled>
+          {event.isEventOver ? "Event Ended" : "Sold Out"}
+        </Button>
+      );
+    }
+
+    switch (buttonState) {
+      case "loading":
+        return (
+          <Button size="sm" disabled>
+            Loading...
+          </Button>
+        );
+      case "needs_approval":
+        return (
+          <Button size="sm" onClick={handleApprove}>
+            Approve USDT
+          </Button>
+        );
+      case "approved":
+        return (
+          <Button size="sm" onClick={handleBuy}>
+            Buy Ticket
+          </Button>
+        );
+      default:
+        return (
+          <Button size="sm" disabled>
+            Checking status...
+          </Button>
+        );
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow min-w-[600px] mb-6">
@@ -73,14 +184,9 @@ export const EventCard: React.FC<{
           {/* Price and action */}
           <div className="flex justify-between items-center mt-2">
             <span className="text-lg font-bold">
-              ${formatPrice(event.ticketPrice)} USDT
+              ${formatPrice(event.ticketPrice * BigInt(quantity))} USDT
             </span>
-            <Button
-              size="sm"
-              disabled={event.isEventOver || ticketsAvailable <= 0}
-            >
-              Buy Ticket
-            </Button>
+            <div className="flex items-center gap-2">{renderButton()}</div>
           </div>
         </div>
       </CardContent>

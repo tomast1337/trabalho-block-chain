@@ -1,4 +1,4 @@
-import { useContracts } from "@event_ticketing/blockchain-access";
+import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { formatUnits } from "ethers";
 import { Loader2, TicketIcon, WalletIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ type AttendedEvent = Event & {
 };
 
 export const Tickets: React.FC = () => {
-  const { usdt, eventTicketing, signer } = useContracts();
+  const { usdc, eventTicketing, signer } = useEventTicketing();
   const [balance, setBalance] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +23,11 @@ export const Tickets: React.FC = () => {
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      if (signer && usdt) {
+      if (signer && usdc) {
         try {
           setIsLoading(true);
           const userAddress = await signer.getAddress();
-          const balance = await usdt.balanceOf(userAddress);
+          const balance = await usdc.balanceOf(userAddress);
           setAddress(userAddress);
           setBalance(formatUnits(balance, 6));
         } catch (err) {
@@ -73,7 +73,7 @@ export const Tickets: React.FC = () => {
 
     fetchWalletData();
     fetchAttendedEvents();
-  }, [signer, usdt, eventTicketing, page, pageSize]);
+  }, [signer, usdc, eventTicketing, page, pageSize]);
 
   return (
     <div className="flex-grow flex flex-col items-center p-4">

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useContracts } from "@event_ticketing/blockchain-access";
+import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Popover,
@@ -46,7 +46,7 @@ export const CreateEventModal: React.FC<{
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }> = ({ isOpen, onOpenChange }) => {
-  const { eventTicketing } = useContracts();
+  const { eventTicketing } = useEventTicketing();
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),

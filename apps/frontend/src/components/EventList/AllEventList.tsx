@@ -1,10 +1,10 @@
-import { useContracts } from "@event_ticketing/blockchain-access";
+import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { Ban, CalendarArrowUp, LoaderCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { EventCard, type Event } from "./EventCard";
 
 export const AllEventList: React.FC = () => {
-  const { eventTicketing } = useContracts();
+  const { eventTicketing } = useEventTicketing();
   const [data, setData] = useState<{
     events: Event[];
     page: number;
@@ -94,9 +94,11 @@ export const AllEventList: React.FC = () => {
               </p>
             </div>
           )}
-          {events.map((event) => (
-            <EventCard key={event.id.toString()} event={event} />
-          ))}
+          <div className="max-w-[900px] mx-auto">
+            {events.map((event) => (
+              <EventCard key={event.id.toString()} event={event} />
+            ))}
+          </div>
         </>
       )}
       {loading && (

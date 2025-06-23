@@ -1,4 +1,4 @@
-import { useContracts } from "@event_ticketing/blockchain-access";
+import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { formatUnits } from "ethers";
 import { Loader2, WalletIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Profile: React.FC = () => {
-  const { usdt, eventTicketing, signer } = useContracts();
+  const { usdc, eventTicketing, signer } = useEventTicketing();
   const [balance, setBalance] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,12 +19,12 @@ export const Profile: React.FC = () => {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   const fetchProfileData = async () => {
-    if (signer && usdt && eventTicketing) {
+    if (signer && usdc && eventTicketing) {
       setIsLoading(true);
       setEventsLoading(true);
       try {
         const userAddress = await signer.getAddress();
-        const balance = await usdt.balanceOf(userAddress);
+        const balance = await usdc.balanceOf(userAddress);
         setAddress(userAddress);
         setBalance(formatUnits(balance, 6));
 
@@ -42,7 +42,7 @@ export const Profile: React.FC = () => {
 
   useEffect(() => {
     fetchProfileData();
-  }, [signer, usdt, eventTicketing]);
+  }, [signer, usdc, eventTicketing]);
 
   const handleWithdraw = async (eventId: bigint) => {
     if (!eventTicketing) return;
