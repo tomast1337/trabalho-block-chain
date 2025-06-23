@@ -3,7 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { useEventTicketing } from "@event_ticketing/blockchain-access";
-import { CalendarIcon, TicketIcon } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Barcode,
+  CalendarIcon,
+  CircleX,
+  House,
+  LoaderCircle,
+  Smile,
+  SquareDashed,
+  TicketIcon,
+  Wallet,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -124,25 +135,26 @@ export const EventCard: React.FC<{
       case "loading":
         return (
           <Button size="sm" disabled>
-            Loading...
+            Loading <LoaderCircle className="animate-spin h-4 w-4 ml-2" />
           </Button>
         );
       case "needs_approval":
         return (
           <Button size="sm" onClick={handleApprove}>
-            Approve USDT
+            Approve <BadgeDollarSign className="ml-2 h-4 w-4 inline" />
           </Button>
         );
       case "approved":
         return (
           <Button size="sm" onClick={handleBuy}>
-            Buy Ticket
+            Buy Ticket <Barcode className="ml-2 h-4 w-4 inline" />
           </Button>
         );
       default:
         return (
           <Button size="sm" disabled>
-            Checking status...
+            Checking status{" "}
+            <LoaderCircle className="animate-spin h-4 w-4 ml-2" />
           </Button>
         );
     }
@@ -158,14 +170,33 @@ export const EventCard: React.FC<{
               {event.name}
             </h3>
             <div className="flex gap-2">
-              {isUserEvent && <Badge variant="default">Your Event</Badge>}
-              {hasTickets === true && <Badge variant="secondary">Owned</Badge>}
+              {isUserEvent && (
+                <Badge variant="default">
+                  Your Event
+                  <House className="ml-1 h-4 w-4 inline" />
+                </Badge>
+              )}
+              {hasTickets === true && (
+                <Badge variant="secondary">
+                  Owned
+                  <Wallet className="ml-1 h-4 w-4 inline" />
+                </Badge>
+              )}
               {event.isEventOver ? (
-                <Badge variant="destructive">Ended</Badge>
+                <Badge variant="destructive">
+                  Ended
+                  <CircleX className="ml-1 h-4 w-4 inline" />
+                </Badge>
               ) : ticketsAvailable <= 0 ? (
-                <Badge variant="secondary">Sold Out</Badge>
+                <Badge variant="secondary">
+                  Sold Out
+                  <SquareDashed className="ml-1 h-4 w-4 inline" />
+                </Badge>
               ) : (
-                <Badge variant="outline">Active</Badge>
+                <Badge variant="outline">
+                  Active
+                  <Smile className="ml-1 h-4 w-4 inline" />
+                </Badge>
               )}
             </div>
           </div>
