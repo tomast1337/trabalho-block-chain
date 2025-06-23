@@ -157,7 +157,7 @@ export const EventCard: React.FC<{
             </h3>
             <div className="flex gap-2">
               {isUserEvent && <Badge variant="default">Your Event</Badge>}
-              {hasTickets && <Badge variant="secondary">Owned</Badge>}
+              {hasTickets === true && <Badge variant="secondary">Owned</Badge>}
               {event.isEventOver ? (
                 <Badge variant="destructive">Ended</Badge>
               ) : ticketsAvailable <= 0 ? (
