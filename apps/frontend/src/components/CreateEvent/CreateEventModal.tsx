@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -6,7 +6,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@radix-ui/react-popover";
-import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -252,7 +251,7 @@ export const CreateEventModal: React.FC<{
                           )}
                         >
                           {field.value ? (
-                            format(new Date(field.value), "PPP")
+                            formatDate(field.value)
                           ) : (
                             <span>Pick a date</span>
                           )}

@@ -1,9 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatDate, formatPrice } from "@/lib/utils";
 import { useEventTicketing } from "@event_ticketing/blockchain-access";
-import { format } from "date-fns";
-import { formatUnits } from "ethers";
 import { CalendarIcon, TicketIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -28,14 +27,6 @@ export const EventCard: React.FC<{
     "initial" | "needs_approval" | "approved" | "loading"
   >("initial");
   const [quantity] = useState(1);
-
-  const formatDate = (timestamp: bigint) => {
-    return format(new Date(Number(timestamp) * 1000), "MMM dd, yyyy h:mm a");
-  };
-
-  const formatPrice = (price: bigint) => {
-    return formatUnits(price, 6); // Assuming USDT uses 6 decimals
-  };
 
   const ticketsAvailable =
     Number(event.totalTickets) - Number(event.ticketsSold);
