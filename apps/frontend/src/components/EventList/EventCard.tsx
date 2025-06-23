@@ -125,7 +125,7 @@ export const EventCard: React.FC<{
 
     if (event.isEventOver || ticketsAvailable <= 0) {
       return (
-        <Button size="sm" disabled>
+        <Button variant="ghost" size="sm" disabled>
           {event.isEventOver ? "Event Ended" : "Sold Out"}
         </Button>
       );
@@ -134,25 +134,26 @@ export const EventCard: React.FC<{
     switch (buttonState) {
       case "loading":
         return (
-          <Button size="sm" disabled>
+          <Button variant="ghost" size="sm" disabled>
             Loading <LoaderCircle className="animate-spin h-4 w-4 ml-2" />
           </Button>
         );
       case "needs_approval":
         return (
-          <Button size="sm" onClick={handleApprove}>
-            Approve <BadgeDollarSign className="ml-2 h-4 w-4 inline" />
+          <Button variant="default" size="sm" onClick={handleApprove}>
+            Approve USDC
+            <BadgeDollarSign className="ml-2 h-4 w-4 inline" />
           </Button>
         );
       case "approved":
         return (
-          <Button size="sm" onClick={handleBuy}>
+          <Button variant="default" size="sm" onClick={handleBuy}>
             Buy Ticket <Barcode className="ml-2 h-4 w-4 inline" />
           </Button>
         );
       default:
         return (
-          <Button size="sm" disabled>
+          <Button variant="ghost" size="sm" disabled>
             Checking status{" "}
             <LoaderCircle className="animate-spin h-4 w-4 ml-2" />
           </Button>
@@ -171,19 +172,19 @@ export const EventCard: React.FC<{
             </h3>
             <div className="flex gap-2">
               {isUserEvent && (
-                <Badge variant="default">
+                <Badge variant="info">
                   Your Event
                   <House className="ml-1 h-4 w-4 inline" />
                 </Badge>
               )}
               {hasTickets === true && (
-                <Badge variant="secondary">
+                <Badge variant="success">
                   Owned
                   <Wallet className="ml-1 h-4 w-4 inline" />
                 </Badge>
               )}
               {event.isEventOver ? (
-                <Badge variant="destructive">
+                <Badge variant="danger">
                   Ended
                   <CircleX className="ml-1 h-4 w-4 inline" />
                 </Badge>
@@ -193,7 +194,7 @@ export const EventCard: React.FC<{
                   <SquareDashed className="ml-1 h-4 w-4 inline" />
                 </Badge>
               ) : (
-                <Badge variant="outline">
+                <Badge variant="success">
                   Active
                   <Smile className="ml-1 h-4 w-4 inline" />
                 </Badge>
