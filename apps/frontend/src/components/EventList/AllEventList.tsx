@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { EventCard, type Event } from "./EventCard";
 
 export const AllEventList: React.FC = () => {
-  const { eventTicketing } = useEventTicketing();
+  const { eventTicketing, signer } = useEventTicketing();
   const [data, setData] = useState<{
     events: Event[];
     page: number;
@@ -19,6 +19,21 @@ export const AllEventList: React.FC = () => {
     totalEvents: 0n,
     loading: true,
   });
+  const [userAddress, setUserAddress] = useState<string | undefined>();
+
+  useEffect(() => {
+    const getUserAddress = async () => {
+      if (signer) {
+        try {
+          const address = await signer.getAddress();
+          setUserAddress(address);
+        } catch (error) {
+          console.error("Error getting user address:", error);
+        }
+      }
+    };
+    getUserAddress();
+  }, [signer]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -87,7 +102,11 @@ export const AllEventList: React.FC = () => {
           )}
           <div className="max-w-[900px] mx-auto">
             {events.map((event) => (
-              <EventCard key={event.id.toString()} event={event} />
+              <EventCard
+                key={event.id.toString()}
+                event={event}
+                userAddress={userAddress}
+              />
             ))}
           </div>
         </>

@@ -15,6 +15,21 @@ export const Profile: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [createdEvents, setCreatedEvents] = useState<EventType[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [userAddress, setUserAddress] = useState<string | undefined>();
+
+  useEffect(() => {
+    const getUserAddress = async () => {
+      if (signer) {
+        try {
+          const address = await signer.getAddress();
+          setUserAddress(address);
+        } catch (error) {
+          console.error("Error getting user address:", error);
+        }
+      }
+    };
+    getUserAddress();
+  }, [signer]);
 
   const fetchProfileData = useCallback(async () => {
     if (signer && usdc && eventTicketing) {
@@ -76,7 +91,11 @@ export const Profile: React.FC = () => {
         <div className="flex flex-col items-center gap-6">
           {createdEvents.map((event) => (
             <div key={event.id.toString()} className="relative">
-              <EventCard event={event} />
+              <EventCard
+                event={event}
+                showBuyButton={false}
+                userAddress={userAddress}
+              />
               {new Date(Number(event.eventDate) * 1000) < new Date() &&
                 !event.isEventOver && (
                   <Button

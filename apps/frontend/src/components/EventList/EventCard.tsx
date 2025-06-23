@@ -20,7 +20,9 @@ export type Event = {
 };
 export const EventCard: React.FC<{
   event: Event;
-}> = ({ event }) => {
+  showBuyButton?: boolean;
+  userAddress?: string;
+}> = ({ event, showBuyButton = true, userAddress }) => {
   const { checkAllowance, approve, buyTicket, signer, eventTicketing } =
     useEventTicketing();
   const [buttonState, setButtonState] = useState<
@@ -33,13 +35,17 @@ export const EventCard: React.FC<{
 
   const totalPrice = event.ticketPrice * BigInt(quantity);
 
+  const isUserEvent =
+    userAddress && event.organizer.toLowerCase() === userAddress.toLowerCase();
+
   useEffect(() => {
     const checkNeedsApproval = async () => {
       if (
         !signer ||
         !eventTicketing ||
         event.isEventOver ||
-        ticketsAvailable <= 0
+        ticketsAvailable <= 0 ||
+        !showBuyButton
       ) {
         return;
       }
@@ -65,6 +71,7 @@ export const EventCard: React.FC<{
     checkAllowance,
     event.isEventOver,
     ticketsAvailable,
+    showBuyButton,
   ]);
 
   const handleApprove = async () => {
@@ -97,6 +104,10 @@ export const EventCard: React.FC<{
   };
 
   const renderButton = () => {
+    if (!showBuyButton) {
+      return null;
+    }
+
     if (event.isEventOver || ticketsAvailable <= 0) {
       return (
         <Button size="sm" disabled>
@@ -142,13 +153,16 @@ export const EventCard: React.FC<{
             <h3 className="text-xl font-semibold leading-tight">
               {event.name}
             </h3>
-            {event.isEventOver ? (
-              <Badge variant="destructive">Ended</Badge>
-            ) : ticketsAvailable <= 0 ? (
-              <Badge variant="secondary">Sold Out</Badge>
-            ) : (
-              <Badge variant="outline">Active</Badge>
-            )}
+            <div className="flex gap-2">
+              {isUserEvent && <Badge variant="default">Your Event</Badge>}
+              {event.isEventOver ? (
+                <Badge variant="destructive">Ended</Badge>
+              ) : ticketsAvailable <= 0 ? (
+                <Badge variant="secondary">Sold Out</Badge>
+              ) : (
+                <Badge variant="outline">Active</Badge>
+              )}
+            </div>
           </div>
 
           {/* Description */}

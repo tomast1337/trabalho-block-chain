@@ -13,7 +13,8 @@ type AttendedEvent = Event & {
 const TicketsList: React.FC<{
   attendedEvents: AttendedEvent[];
   eventsLoading: boolean;
-}> = ({ attendedEvents, eventsLoading }) => {
+  userAddress?: string;
+}> = ({ attendedEvents, eventsLoading, userAddress }) => {
   return (
     <div className="w-full">
       <h2 className="text-2xl font-bold text-center mb-6">Your Tickets</h2>
@@ -30,7 +31,11 @@ const TicketsList: React.FC<{
       <div className="flex flex-col items-center gap-6">
         {attendedEvents.map((event) => (
           <div key={event.id.toString()} className="relative">
-            <EventCard event={event} />
+            <EventCard
+              event={event}
+              showBuyButton={false}
+              userAddress={userAddress}
+            />
             <Badge className="absolute -top-3 -right-3 flex items-center gap-1">
               <TicketIcon className="h-4 w-4" />
               {event.ticketsOwned.toString()}
@@ -50,6 +55,21 @@ export const Tickets: React.FC = () => {
   const [, setError] = useState<string | null>(null);
   const [page] = useState(0);
   const [pageSize] = useState(50);
+  const [userAddress, setUserAddress] = useState<string | undefined>();
+
+  useEffect(() => {
+    const getUserAddress = async () => {
+      if (signer) {
+        try {
+          const address = await signer.getAddress();
+          setUserAddress(address);
+        } catch (error) {
+          console.error("Error getting user address:", error);
+        }
+      }
+    };
+    getUserAddress();
+  }, [signer]);
 
   useEffect(() => {
     const fetchAttendedEvents = async () => {
@@ -93,6 +113,7 @@ export const Tickets: React.FC = () => {
       <TicketsList
         attendedEvents={attendedEvents}
         eventsLoading={eventsLoading}
+        userAddress={userAddress}
       />
     </div>
   );
