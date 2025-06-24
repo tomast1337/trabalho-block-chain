@@ -25,6 +25,18 @@ contract EventTicketing {
     uint256 public eventCount;
     mapping(uint256 => Event) public events;
 
+    struct EventInfo {
+        uint256 id;
+        address organizer;
+        string name;
+        string description;
+        uint256 ticketPrice;
+        uint256 totalTickets;
+        uint256 ticketsSold;
+        uint256 eventDate;
+        bool isEventOver;
+    }
+
     event EventCreated(
         uint256 eventId,
         address organizer,
@@ -163,32 +175,20 @@ contract EventTicketing {
 
     function getEventDetails(
         uint256 _eventId
-    )
-        external
-        view
-        eventExists(_eventId)
-        returns (
-            address organizer,
-            string memory name,
-            string memory description,
-            uint256 ticketPrice,
-            uint256 totalTickets,
-            uint256 ticketsSold,
-            uint256 eventDate,
-            bool isEventOver
-        )
-    {
+    ) external view eventExists(_eventId) returns (EventInfo memory) {
         Event storage e = events[_eventId];
-        return (
-            e.organizer,
-            e.name,
-            e.description,
-            e.ticketPrice,
-            e.totalTickets,
-            e.ticketsSold,
-            e.eventDate,
-            e.isEventOver
-        );
+        return
+            EventInfo({
+                id: _eventId,
+                organizer: e.organizer,
+                name: e.name,
+                description: e.description,
+                ticketPrice: e.ticketPrice,
+                totalTickets: e.totalTickets,
+                ticketsSold: e.ticketsSold,
+                eventDate: e.eventDate,
+                isEventOver: e.isEventOver
+            });
     }
 
     function getTicketsOwned(
@@ -243,18 +243,6 @@ contract EventTicketing {
         }
 
         return (eventIds, ticketCounts, eventCount);
-    }
-
-    struct EventInfo {
-        uint256 id;
-        address organizer;
-        string name;
-        string description;
-        uint256 ticketPrice;
-        uint256 totalTickets;
-        uint256 ticketsSold;
-        uint256 eventDate;
-        bool isEventOver;
     }
 
     function getEventsPaginated(

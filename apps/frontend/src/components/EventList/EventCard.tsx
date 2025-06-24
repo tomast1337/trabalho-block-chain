@@ -15,7 +15,7 @@ import {
   TicketIcon,
   Wallet,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export type Event = {
@@ -45,11 +45,22 @@ export const EventCard: React.FC<{
   const ticketsAvailable =
     Number(event.totalTickets) - Number(event.ticketsSold);
 
-  const totalPrice = BigInt(event.ticketPrice) * BigInt(quantity);
+  const totalPrice = useMemo(
+    () => BigInt(event.ticketPrice) * BigInt(quantity),
+    [event.ticketPrice, quantity]
+  );
 
   const isUserEvent =
-    userAddress && event.organizer.toLowerCase() === userAddress.toLowerCase();
-  const hasTickets = ticketsOwned && BigInt(ticketsOwned) > 0n;
+    useMemo(
+      () =>
+        userAddress &&
+        event.organizer.toLowerCase() === userAddress.toLowerCase(),
+      [userAddress, event.organizer]
+    ) || false;
+  const hasTickets = useMemo(
+    () => ticketsOwned && BigInt(ticketsOwned) > 0n,
+    [ticketsOwned]
+  );
 
   useEffect(() => {
     const checkNeedsApproval = async () => {

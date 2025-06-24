@@ -32,7 +32,17 @@ const TicketsList: React.FC<{
         {attendedEvents.map((event) => (
           <div key={event.id.toString()} className="relative">
             <EventCard
-              event={event}
+              event={{
+                description: event.description,
+                eventDate: event.eventDate,
+                id: event.id,
+                isEventOver: event.isEventOver,
+                name: event.name,
+                organizer: event.organizer,
+                ticketPrice: event.ticketPrice,
+                ticketsSold: event.ticketsSold,
+                totalTickets: event.totalTickets,
+              }}
               showBuyButton={false}
               userAddress={userAddress}
               ticketsOwned={event.ticketsOwned}
@@ -96,6 +106,7 @@ export const Tickets: React.FC = () => {
         });
 
         const newAttendedEvents = await Promise.all(attendedEventsPromises);
+        console.log("Fetched attended events:", newAttendedEvents);
         setAttendedEvents(newAttendedEvents);
       } catch (err) {
         console.error("Error fetching attended events:", err);

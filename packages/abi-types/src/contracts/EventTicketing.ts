@@ -354,18 +354,7 @@ export interface EventTicketing extends BaseContract {
 
   getEventDetails: TypedContractMethod<
     [_eventId: BigNumberish],
-    [
-      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
-        organizer: string;
-        name: string;
-        description: string;
-        ticketPrice: bigint;
-        totalTickets: bigint;
-        ticketsSold: bigint;
-        eventDate: bigint;
-        isEventOver: boolean;
-      }
-    ],
+    [EventTicketing.EventInfoStructOutput],
     "view"
   >;
 
@@ -473,18 +462,7 @@ export interface EventTicketing extends BaseContract {
     nameOrSignature: "getEventDetails"
   ): TypedContractMethod<
     [_eventId: BigNumberish],
-    [
-      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
-        organizer: string;
-        name: string;
-        description: string;
-        ticketPrice: bigint;
-        totalTickets: bigint;
-        ticketsSold: bigint;
-        eventDate: bigint;
-        isEventOver: boolean;
-      }
-    ],
+    [EventTicketing.EventInfoStructOutput],
     "view"
   >;
   getFunction(
