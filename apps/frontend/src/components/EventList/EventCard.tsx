@@ -38,7 +38,7 @@ export const EventCard: React.FC<{
   const { checkAllowance, approve, buyTicket, signer, eventTicketing } =
     useEventTicketing();
   const [buttonState, setButtonState] = useState<
-    "initial" | "needs_approval" | "approved" | "loading"
+    "initial" | "needs_approval" | "approved" | "loading" | "purchased"
   >("initial");
   const [quantity] = useState(1);
 
@@ -120,8 +120,8 @@ export const EventCard: React.FC<{
     try {
       await buyTicket(event.id, BigInt(quantity));
       toast.success(`Successfully bought ${quantity} ticket(s)!`);
-      // Optionally reset state or refetch data
-      setButtonState("initial"); // Or refetch allowance
+      // Set to purchased state after successful purchase
+      setButtonState("purchased");
     } catch (error) {
       console.error("Error buying ticket:", error);
       toast.error("Ticket purchase failed.");
@@ -160,6 +160,12 @@ export const EventCard: React.FC<{
         return (
           <Button variant="default" size="sm" onClick={handleBuy}>
             Buy Ticket <Barcode className="ml-2 h-4 w-4 inline" />
+          </Button>
+        );
+      case "purchased":
+        return (
+          <Button variant="ghost" size="sm" disabled>
+            Ticket Purchased <Smile className="ml-2 h-4 w-4 inline" />
           </Button>
         );
       default:
