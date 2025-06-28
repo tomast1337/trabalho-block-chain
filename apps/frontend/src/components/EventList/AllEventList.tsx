@@ -86,7 +86,7 @@ export const AllEventList: React.FC = () => {
 
         setData((prev) => ({
           ...prev,
-          events: [...prev.events, ...fetchedEvents],
+          events: fetchedEvents,
           totalEvents: total,
           loading: false,
         }));
