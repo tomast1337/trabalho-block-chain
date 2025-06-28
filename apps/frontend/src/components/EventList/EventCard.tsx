@@ -28,6 +28,7 @@ export type Event = {
   ticketsSold: bigint;
   eventDate: bigint;
   isEventOver: boolean;
+  isCanceled?: boolean;
 };
 export const EventCard: React.FC<{
   event: Event;
@@ -35,8 +36,15 @@ export const EventCard: React.FC<{
   userAddress?: string;
   ticketsOwned?: bigint;
 }> = ({ event, showBuyButton = true, userAddress, ticketsOwned }) => {
-  const { checkAllowance, approve, buyTicket, signer, eventTicketing } =
-    useEventTicketing();
+  const {
+    checkAllowance,
+    approve,
+    buyTicket,
+    signer,
+    eventTicketing,
+    cancelEvent,
+    refundTicket,
+  } = useEventTicketing();
   const [buttonState, setButtonState] = useState<
     "initial" | "needs_approval" | "approved" | "loading" | "purchased"
   >("initial");
@@ -129,11 +137,44 @@ export const EventCard: React.FC<{
     }
   };
 
+  const handleCancelEvent = async () => {
+    if (!event.id) return;
+    try {
+      await cancelEvent(event.id);
+      toast.success("Event canceled successfully.");
+    } catch {
+      toast.error("Failed to cancel event.");
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!event.id) return;
+    try {
+      await refundTicket(event.id);
+      toast.success("Refund successful.");
+    } catch {
+      toast.error("Refund failed.");
+    }
+  };
+
   const renderButton = () => {
+    if (event.isCanceled) {
+      if (hasTickets) {
+        return (
+          <Button variant="destructive" size="sm" onClick={handleRefund}>
+            Refund Ticket
+          </Button>
+        );
+      }
+      return (
+        <Button variant="ghost" size="sm" disabled>
+          Event Canceled
+        </Button>
+      );
+    }
     if (!showBuyButton || hasTickets) {
       return null;
     }
-
     if (event.isEventOver || ticketsAvailable <= 0) {
       return (
         <Button variant="ghost" size="sm" disabled>
@@ -141,7 +182,6 @@ export const EventCard: React.FC<{
         </Button>
       );
     }
-
     switch (buttonState) {
       case "loading":
         return (
@@ -200,7 +240,12 @@ export const EventCard: React.FC<{
                   <Wallet className="ml-1 h-4 w-4 inline" />
                 </Badge>
               )}
-              {event.isEventOver ? (
+              {event.isCanceled ? (
+                <Badge variant="destructive">
+                  Canceled
+                  <CircleX className="ml-1 h-4 w-4 inline" />
+                </Badge>
+              ) : event.isEventOver ? (
                 <Badge variant="danger">
                   Ended
                   <CircleX className="ml-1 h-4 w-4 inline" />
@@ -254,7 +299,18 @@ export const EventCard: React.FC<{
               })()}{" "}
               USDT
             </span>
-            <div className="flex items-center gap-2">{renderButton()}</div>
+            <div className="flex items-center gap-2">
+              {renderButton()}
+              {isUserEvent && !event.isEventOver && !event.isCanceled && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleCancelEvent}
+                >
+                  Cancel Event
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
