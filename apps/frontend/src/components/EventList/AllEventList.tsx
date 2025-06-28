@@ -1,7 +1,8 @@
 import { useEventTicketing } from "@event_ticketing/blockchain-access";
 import { Ban, CalendarArrowUp, LoaderCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { EventCard, type Event } from "./EventCard";
+import { Button } from "../ui/button";
 
 export const AllEventList: React.FC = () => {
   const { eventTicketing, signer } = useEventTicketing();
@@ -12,17 +13,21 @@ export const AllEventList: React.FC = () => {
     totalEvents: bigint;
     error?: string;
     loading: boolean;
+    hasMore: boolean;
   }>({
     events: [],
     page: 0,
-    limit: 50,
+    limit: 10,
     totalEvents: 0n,
     loading: true,
+    hasMore: true,
   });
   const [userAddress, setUserAddress] = useState<string | undefined>();
   const [ticketsOwned, setTicketsOwned] = useState<Map<string, bigint>>(
     new Map()
   );
+  const [loadingMore, setLoadingMore] = useState(false);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
     const getUserAddress = async () => {
@@ -38,15 +43,19 @@ export const AllEventList: React.FC = () => {
     getUserAddress();
   }, [signer]);
 
-  useEffect(() => {
-    const fetchEvents = async () => {
+  const fetchEvents = useCallback(
+    async (page: number, append: boolean = false) => {
       if (!eventTicketing) return;
 
-      setData((prev) => ({ ...prev, loading: true, error: undefined }));
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setData((prev) => ({ ...prev, loading: true, error: undefined }));
+      }
 
       try {
         const [eventInfos, total] = await eventTicketing.getEventsPaginated(
-          data.page,
+          page,
           data.limit,
           true // Only active events
         );
@@ -65,30 +74,45 @@ export const AllEventList: React.FC = () => {
 
         // Check tickets owned for each event
         if (userAddress) {
-          const ticketsOwnedMap = new Map<string, bigint>();
+          // Get current tickets owned for existing events
+          setTicketsOwned((prev) => {
+            const newMap = new Map(prev);
+            return newMap;
+          });
+
           for (const event of fetchedEvents) {
             try {
               const tickets = await eventTicketing.getTicketsOwned(
                 event.id,
                 userAddress
               );
-              ticketsOwnedMap.set(event.id.toString(), tickets);
+              setTicketsOwned((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(event.id.toString(), tickets);
+                return newMap;
+              });
             } catch (error) {
               console.error(
                 `Error getting tickets owned for event ${event.id}:`,
                 error
               );
-              ticketsOwnedMap.set(event.id.toString(), 0n);
+              setTicketsOwned((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(event.id.toString(), 0n);
+                return newMap;
+              });
             }
           }
-          setTicketsOwned(ticketsOwnedMap);
         }
+
+        const hasMore = (page + 1) * data.limit < Number(total);
 
         setData((prev) => ({
           ...prev,
-          events: fetchedEvents,
+          events: append ? [...prev.events, ...fetchedEvents] : fetchedEvents,
           totalEvents: total,
           loading: false,
+          hasMore,
         }));
       } catch (err) {
         console.error("Error fetching events:", err);
@@ -97,14 +121,31 @@ export const AllEventList: React.FC = () => {
           loading: false,
           error: "Failed to fetch events. Please try again later.",
         }));
+      } finally {
+        setLoadingMore(false);
       }
-    };
+    },
+    [eventTicketing, data.limit, userAddress]
+  );
 
-    fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventTicketing, data.page, userAddress]);
+  // Initial load - only run once when both eventTicketing and userAddress are available
+  useEffect(() => {
+    if (eventTicketing && userAddress !== undefined && !isInitialized.current) {
+      isInitialized.current = true;
+      fetchEvents(0, false);
+    }
+  }, [eventTicketing, userAddress, fetchEvents]);
 
-  const { events, error, loading } = data;
+  const handleLoadMore = () => {
+    if (!loadingMore && data.hasMore) {
+      const nextPage = data.page + 1;
+      setData((prev) => ({ ...prev, page: nextPage }));
+      fetchEvents(nextPage, true);
+    }
+  };
+
+  const { events, error, loading, hasMore } = data;
+
   return (
     <section>
       {error && (
@@ -134,6 +175,34 @@ export const AllEventList: React.FC = () => {
               />
             ))}
           </div>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="flex items-center justify-center py-8">
+              <Button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {loadingMore ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More Events"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* End of events indicator */}
+          {!hasMore && events.length > 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>You've reached the end of all events</p>
+            </div>
+          )}
         </>
       )}
       {loading && (
