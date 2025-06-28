@@ -110,7 +110,7 @@ export const Profile: React.FC = () => {
             You have not created any events yet.
           </p>
         )}
-        <div className="flex flex-col items-center gap-6">
+        <div className="max-w-[900px] mx-auto">
           {createdEvents.map((event) => (
             <div key={event.id.toString()} className="relative">
               <EventCard

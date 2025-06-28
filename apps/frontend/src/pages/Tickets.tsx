@@ -16,7 +16,7 @@ const TicketsList: React.FC<{
   userAddress?: string;
 }> = ({ attendedEvents, eventsLoading, userAddress }) => {
   return (
-    <div className="w-full">
+    <section className="w-full">
       <h2 className="text-2xl font-bold text-center mb-6">Your Tickets</h2>
       {eventsLoading && (
         <div className="flex justify-center">
@@ -28,21 +28,11 @@ const TicketsList: React.FC<{
           You do not have any tickets yet.
         </p>
       )}
-      <div className="flex flex-col items-center gap-6">
+      <div className="max-w-[900px] mx-auto">
         {attendedEvents.map((event) => (
           <div key={event.id.toString()} className="relative">
             <EventCard
-              event={{
-                description: event.description,
-                eventDate: event.eventDate,
-                id: event.id,
-                isEventOver: event.isEventOver,
-                name: event.name,
-                organizer: event.organizer,
-                ticketPrice: event.ticketPrice,
-                ticketsSold: event.ticketsSold,
-                totalTickets: event.totalTickets,
-              }}
+              event={event}
               showBuyButton={false}
               userAddress={userAddress}
               ticketsOwned={event.ticketsOwned}
@@ -54,7 +44,7 @@ const TicketsList: React.FC<{
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -98,9 +88,25 @@ export const Tickets: React.FC = () => {
 
         const attendedEventsPromises = eventIds.map(async (eventId, index) => {
           const eventDetails = await eventTicketing.getEventDetails(eventId);
-          return {
-            ...eventDetails,
+
+          // Map the array response to the expected Event object structure
+          // Based on the console log, the array structure is:
+          // [id, organizer, name, description, ticketPrice, totalTickets, ticketsSold, eventDate, isEventOver, isCanceled]
+          const eventObject = {
             id: eventId,
+            organizer: eventDetails[1], // organizer address
+            name: eventDetails[2], // event name
+            description: eventDetails[3], // description
+            ticketPrice: eventDetails[4], // ticket price
+            totalTickets: eventDetails[5], // total tickets
+            ticketsSold: eventDetails[6], // tickets sold
+            eventDate: eventDetails[7], // event date
+            isEventOver: eventDetails[8], // is event over
+            isCanceled: eventDetails[9] || false, // is canceled (default to false)
+          };
+
+          return {
+            ...eventObject,
             ticketsOwned: ticketCounts[index],
           };
         });
