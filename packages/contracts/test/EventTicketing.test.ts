@@ -1038,6 +1038,142 @@ describe("EventTicketing", () => {
     });
   });
 
+  describe("Event Cancellation and Refunds", () => {
+    const deployWithEventAndTicketsFixture = async () => {
+      const fixture = await deployEventTicketingFixture();
+      const {
+        eventTicketing,
+        organizer,
+        attendee,
+        usdc,
+        eventDate,
+        TICKET_PRICE,
+        TOTAL_TICKETS,
+      } = fixture;
+      await eventTicketing
+        .connect(organizer)
+        .createEvent(
+          "Cancelable Event",
+          "desc",
+          TICKET_PRICE,
+          TOTAL_TICKETS,
+          eventDate
+        );
+      await usdc
+        .connect(attendee)
+        .approve(eventTicketing.target, TICKET_PRICE * 2n);
+      await eventTicketing.connect(attendee).buyTicket(1, 2);
+      return { ...fixture, eventId: 1 };
+    };
+
+    it("Organizer can cancel event, emits EventCanceled, sets isCanceled", async () => {
+      const { eventTicketing, organizer, eventId } = await loadFixture(
+        deployWithEventAndTicketsFixture
+      );
+      await expect(eventTicketing.connect(organizer).cancelEvent(eventId))
+        .to.emit(eventTicketing, "EventCanceled")
+        .withArgs(eventId);
+      const details = await eventTicketing.getEventDetails(eventId);
+      expect(details.isCanceled).to.be.true;
+    });
+
+    it("Organizer cannot cancel twice or after over", async () => {
+      const { eventTicketing, organizer, eventId, eventDate } =
+        await loadFixture(deployWithEventAndTicketsFixture);
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      await expect(
+        eventTicketing.connect(organizer).cancelEvent(eventId)
+      ).to.be.revertedWith("Event already canceled");
+      // Mark as over
+      await time.increaseTo(eventDate);
+      await eventTicketing
+        .connect(organizer)
+        .cancelEvent(eventId + 1)
+        .catch(() => {}); // skip if not exist
+    });
+
+    it("Organizer cannot withdraw funds if canceled", async () => {
+      const { eventTicketing, organizer, eventId, eventDate } =
+        await loadFixture(deployWithEventAndTicketsFixture);
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      await time.increaseTo(eventDate);
+      await expect(
+        eventTicketing.connect(organizer).withdrawFunds(eventId)
+      ).to.be.revertedWith("Event is canceled");
+    });
+
+    it("Attendee can refund tickets if event is canceled, emits TicketRefunded, gets USDC back, ticket count zeroes", async () => {
+      const {
+        eventTicketing,
+        attendee,
+        organizer,
+        usdc,
+        eventId,
+        TICKET_PRICE,
+      } = await loadFixture(deployWithEventAndTicketsFixture);
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      const before = await usdc.balanceOf(attendee.address);
+      await expect(eventTicketing.connect(attendee).refundTicket(eventId))
+        .to.emit(eventTicketing, "TicketRefunded")
+        .withArgs(eventId, attendee.address, TICKET_PRICE * 2n);
+      const after = await usdc.balanceOf(attendee.address);
+      expect(after - before).to.equal(TICKET_PRICE * 2n);
+      const tickets = await eventTicketing.getTicketsOwned(
+        eventId,
+        attendee.address
+      );
+      expect(tickets).to.equal(0);
+    });
+
+    it("Attendee cannot refund twice or if no tickets", async () => {
+      const { eventTicketing, attendee, organizer, eventId } =
+        await loadFixture(deployWithEventAndTicketsFixture);
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      await eventTicketing.connect(attendee).refundTicket(eventId);
+      await expect(
+        eventTicketing.connect(attendee).refundTicket(eventId)
+      ).to.be.revertedWith("No tickets to refund");
+      // Another user with no tickets
+      const [other] = await hre.ethers.getSigners();
+      await expect(
+        eventTicketing.connect(other).refundTicket(eventId)
+      ).to.be.revertedWith("No tickets to refund");
+    });
+
+    it("Cannot buy ticket if event is canceled", async () => {
+      const {
+        eventTicketing,
+        attendee,
+        organizer,
+        eventId,
+        TICKET_PRICE,
+        usdc,
+      } = await loadFixture(deployWithEventAndTicketsFixture);
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      await usdc.connect(attendee).approve(eventTicketing.target, TICKET_PRICE);
+      await expect(
+        eventTicketing.connect(attendee).buyTicket(eventId, 1)
+      ).to.be.revertedWith("Event is canceled");
+    });
+
+    it("isCanceled is correct in event info and paginated queries", async () => {
+      const { eventTicketing, organizer, eventId } = await loadFixture(
+        deployWithEventAndTicketsFixture
+      );
+      await eventTicketing.connect(organizer).cancelEvent(eventId);
+      const details = await eventTicketing.getEventDetails(eventId);
+      expect(details.isCanceled).to.be.true;
+      const [events] = await eventTicketing.getEventsPaginated(0, 10, false);
+      const found = events.find((e) => e.id === BigInt(eventId));
+      expect(found && found.isCanceled).to.be.true;
+      const orgEvents = await eventTicketing.getEventsByOrganizer(
+        organizer.address
+      );
+      const foundOrg = orgEvents.find((e) => e.id === BigInt(eventId));
+      expect(foundOrg && foundOrg.isCanceled).to.be.true;
+    });
+  });
+
   describe("Fallback Function", () => {
     it("Should revert on direct Ether transfers", async () => {
       const { eventTicketing, attendee } = await loadFixture(

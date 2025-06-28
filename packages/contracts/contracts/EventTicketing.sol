@@ -19,6 +19,7 @@ contract EventTicketing {
         uint256 ticketsSold;
         uint256 eventDate;
         bool isEventOver;
+        bool isCanceled;
         mapping(address => uint256) attendees;
     }
 
@@ -35,6 +36,7 @@ contract EventTicketing {
         uint256 ticketsSold;
         uint256 eventDate;
         bool isEventOver;
+        bool isCanceled;
     }
 
     event EventCreated(
@@ -47,6 +49,8 @@ contract EventTicketing {
     );
     event TicketPurchased(uint256 eventId, address attendee, uint256 quantity);
     event FundsWithdrawn(uint256 eventId, address organizer, uint256 amount);
+    event EventCanceled(uint256 eventId);
+    event TicketRefunded(uint256 eventId, address attendee, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -71,6 +75,7 @@ contract EventTicketing {
 
     modifier eventNotOver(uint256 _eventId) {
         require(!events[_eventId].isEventOver, "Event is already over");
+        require(!events[_eventId].isCanceled, "Event is canceled");
         _;
     }
 
@@ -107,6 +112,7 @@ contract EventTicketing {
         newEvent.ticketsSold = 0;
         newEvent.eventDate = _eventDate;
         newEvent.isEventOver = false;
+        newEvent.isCanceled = false;
 
         emit EventCreated(
             eventCount,
@@ -151,26 +157,44 @@ contract EventTicketing {
         emit TicketPurchased(_eventId, msg.sender, _quantity);
     }
 
+    function cancelEvent(
+        uint256 _eventId
+    ) external eventExists(_eventId) onlyOrganizer(_eventId) {
+        Event storage e = events[_eventId];
+        require(!e.isEventOver, "Event is already over");
+        require(!e.isCanceled, "Event already canceled");
+        e.isCanceled = true;
+        emit EventCanceled(_eventId);
+    }
+
     function withdrawFunds(
         uint256 _eventId
     ) external eventExists(_eventId) onlyOrganizer(_eventId) {
         Event storage eventToWithdraw = events[_eventId];
-
+        require(!eventToWithdraw.isCanceled, "Event is canceled");
         require(
             block.timestamp >= eventToWithdraw.eventDate,
             "Event has not occurred yet"
         );
         require(!eventToWithdraw.isEventOver, "Funds already withdrawn");
-
         uint256 balance = eventToWithdraw.ticketPrice *
             eventToWithdraw.ticketsSold;
         require(balance > 0, "No funds to withdraw");
-
         eventToWithdraw.isEventOver = true;
-
         usdcToken.safeTransfer(eventToWithdraw.organizer, balance);
-
         emit FundsWithdrawn(_eventId, eventToWithdraw.organizer, balance);
+    }
+
+    function refundTicket(uint256 _eventId) external eventExists(_eventId) {
+        Event storage e = events[_eventId];
+        require(e.isCanceled, "Event is not canceled");
+        uint256 tickets = e.attendees[msg.sender];
+        require(tickets > 0, "No tickets to refund");
+        uint256 refundAmount = e.ticketPrice * tickets;
+        e.ticketsSold -= tickets;
+        e.attendees[msg.sender] = 0;
+        usdcToken.safeTransfer(msg.sender, refundAmount);
+        emit TicketRefunded(_eventId, msg.sender, refundAmount);
     }
 
     function getEventDetails(
@@ -187,7 +211,8 @@ contract EventTicketing {
                 totalTickets: e.totalTickets,
                 ticketsSold: e.ticketsSold,
                 eventDate: e.eventDate,
-                isEventOver: e.isEventOver
+                isEventOver: e.isEventOver,
+                isCanceled: e.isCanceled
             });
     }
 
@@ -263,7 +288,10 @@ contract EventTicketing {
         uint256 count = 0;
 
         for (uint256 i = start; i < end; i++) {
-            if (!_onlyActive || !events[i].isEventOver) {
+            if (
+                !_onlyActive ||
+                (!events[i].isEventOver && !events[i].isCanceled)
+            ) {
                 Event storage e = events[i];
                 infos[count] = EventInfo({
                     id: i,
@@ -274,7 +302,8 @@ contract EventTicketing {
                     totalTickets: e.totalTickets,
                     ticketsSold: e.ticketsSold,
                     eventDate: e.eventDate,
-                    isEventOver: e.isEventOver
+                    isEventOver: e.isEventOver,
+                    isCanceled: e.isCanceled
                 });
                 count++;
             }
@@ -315,7 +344,8 @@ contract EventTicketing {
                     totalTickets: e.totalTickets,
                     ticketsSold: e.ticketsSold,
                     eventDate: e.eventDate,
-                    isEventOver: e.isEventOver
+                    isEventOver: e.isEventOver,
+                    isCanceled: e.isCanceled
                 });
                 currentUserEventIndex++;
             }

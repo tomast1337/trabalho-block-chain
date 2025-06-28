@@ -1,4 +1,4 @@
-import { fakerPT_BR as faker } from "@faker-js/faker";
+import { fakerUK as faker } from "@faker-js/faker";
 import { ethers } from "hardhat";
 import {
   EventTicketing__factory,
@@ -174,6 +174,131 @@ async function createSampleEvents(
   }
 }
 
+async function simulateTicketPurchases(
+  eventTicketing: EventTicketing,
+  usdc: MockUSDC,
+  accounts: any[]
+) {
+  console.log("🎫 Simulating ticket purchases...");
+
+  // Get all events
+  const eventCount = await eventTicketing.eventCount();
+  console.log(`📊 Found ${eventCount} events to simulate purchases for`);
+
+  // Use accounts as buyers (excluding the first 5 which are organizers)
+  const buyers = accounts.slice(5);
+
+  if (buyers.length === 0) {
+    console.log("⚠️ No buyer accounts available for simulation");
+    return;
+  }
+
+  for (let eventId = 1; eventId <= eventCount; eventId++) {
+    try {
+      const eventDetails = await eventTicketing.getEventDetails(eventId);
+
+      // Skip events that are already sold out or have no tickets
+      if (eventDetails.ticketsSold >= eventDetails.totalTickets) {
+        console.log(
+          `⏭️ Event ${eventId} (${eventDetails.name}) is sold out, skipping...`
+        );
+        continue;
+      }
+
+      console.log(
+        `\n🎭 Simulating purchases for Event ${eventId}: ${eventDetails.name}`
+      );
+      console.log(
+        `💰 Ticket Price: ${ethers.formatUnits(
+          eventDetails.ticketPrice,
+          6
+        )} USDC`
+      );
+      console.log(
+        `🎫 Available: ${
+          eventDetails.totalTickets - eventDetails.ticketsSold
+        }/${eventDetails.totalTickets}`
+      );
+
+      // Simulate multiple buyers for this event
+      const numBuyers = faker.number.int({
+        min: 2,
+        max: Math.min(buyers.length, 8),
+      });
+      const selectedBuyers = faker.helpers.arrayElements(buyers, numBuyers);
+
+      for (const buyer of selectedBuyers) {
+        try {
+          // Random quantity between 1 and 4 tickets
+          const quantity = faker.number.int({ min: 1, max: 4 });
+
+          // Check if buyer has enough balance and allowance
+          const buyerBalance = await usdc.balanceOf(buyer.address);
+          const buyerAllowance = await usdc.allowance(
+            buyer.address,
+            await eventTicketing.getAddress()
+          );
+          const totalPrice = eventDetails.ticketPrice * BigInt(quantity);
+
+          if (buyerBalance < totalPrice) {
+            console.log(
+              `💸 ${buyer.address} insufficient balance for ${quantity} tickets`
+            );
+            continue;
+          }
+
+          // Approve USDC spending if needed
+          if (buyerAllowance < totalPrice) {
+            const approveTx = await usdc
+              .connect(buyer)
+              .approve(await eventTicketing.getAddress(), totalPrice);
+            await approveTx.wait();
+          }
+
+          // Purchase tickets
+          const purchaseTx = await eventTicketing
+            .connect(buyer)
+            .buyTicket(eventId, quantity);
+          await purchaseTx.wait();
+
+          console.log(
+            `✅ ${
+              buyer.address
+            } bought ${quantity} ticket(s) for ${ethers.formatUnits(
+              totalPrice,
+              6
+            )} USDC`
+          );
+
+          // Add some randomness to make it more realistic
+          if (faker.datatype.boolean(0.3)) {
+            // 30% chance to skip some purchases
+            break;
+          }
+        } catch (error: unknown) {
+          console.error(
+            `❌ Failed to purchase tickets for ${buyer.address}:`,
+            error instanceof Error ? error.message : String(error)
+          );
+        }
+      }
+
+      // Get updated event details
+      const updatedEventDetails = await eventTicketing.getEventDetails(eventId);
+      console.log(
+        `📈 Event ${eventId} now has ${updatedEventDetails.ticketsSold}/${updatedEventDetails.totalTickets} tickets sold`
+      );
+    } catch (error: unknown) {
+      console.error(
+        `❌ Failed to process event ${eventId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
+
+  console.log("\n🎉 Ticket purchase simulation completed!");
+}
+
 async function main() {
   try {
     const [deployer, ...accounts] = await ethers.getSigners();
@@ -187,6 +312,12 @@ async function main() {
 
     // Create sample events
     await createSampleEvents(eventTicketing, [deployer, ...accounts]);
+
+    // Simulate ticket purchases
+    await simulateTicketPurchases(eventTicketing, usdc, [
+      deployer,
+      ...accounts,
+    ]);
 
     console.log("✨ Deployment and setup completed successfully!");
   } catch (error) {

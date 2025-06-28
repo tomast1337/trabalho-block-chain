@@ -9,6 +9,8 @@ import { EventTicketing } from "@event_ticketing/abi-types";
 import {
   getEventTicketingContract,
   getUsdcContract,
+  cancelEvent as cancelEventHelper,
+  refundTicket as refundTicketHelper,
 } from "../contracts/eventTicketing";
 import { BrowserProvider, JsonRpcSigner, MaxUint256 } from "ethers";
 import { MockUSDC } from "@event_ticketing/abi-types/src/contracts/MockUSDC";
@@ -27,6 +29,8 @@ interface EventTicketingContextType {
   ) => Promise<boolean>;
   approve: (spender: string, amount: bigint) => Promise<void>;
   buyTicket: (eventId: bigint, quantity: bigint) => Promise<void>;
+  cancelEvent: (eventId: bigint) => Promise<void>;
+  refundTicket: (eventId: bigint) => Promise<void>;
 }
 
 const EventTicketingContext = createContext<EventTicketingContextType>({
@@ -39,6 +43,8 @@ const EventTicketingContext = createContext<EventTicketingContextType>({
   checkAllowance: async () => false,
   approve: async () => {},
   buyTicket: async () => {},
+  cancelEvent: async () => {},
+  refundTicket: async () => {},
 });
 
 export const EventTicketingProvider: React.FC<{
@@ -131,6 +137,22 @@ export const EventTicketingProvider: React.FC<{
     [contracts.eventTicketing]
   );
 
+  const cancelEvent = useCallback(
+    async (eventId: bigint) => {
+      if (!signer) throw new Error("Signer not loaded");
+      await cancelEventHelper(signer, eventId);
+    },
+    [signer]
+  );
+
+  const refundTicket = useCallback(
+    async (eventId: bigint) => {
+      if (!signer) throw new Error("Signer not loaded");
+      await refundTicketHelper(signer, eventId);
+    },
+    [signer]
+  );
+
   return (
     <EventTicketingContext.Provider
       value={{
@@ -142,6 +164,8 @@ export const EventTicketingProvider: React.FC<{
         checkAllowance,
         approve,
         buyTicket,
+        cancelEvent,
+        refundTicket,
       }}
     >
       {children}

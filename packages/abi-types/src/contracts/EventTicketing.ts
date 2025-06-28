@@ -34,6 +34,7 @@ export declare namespace EventTicketing {
     ticketsSold: BigNumberish;
     eventDate: BigNumberish;
     isEventOver: boolean;
+    isCanceled: boolean;
   };
 
   export type EventInfoStructOutput = [
@@ -45,7 +46,8 @@ export declare namespace EventTicketing {
     totalTickets: bigint,
     ticketsSold: bigint,
     eventDate: bigint,
-    isEventOver: boolean
+    isEventOver: boolean,
+    isCanceled: boolean
   ] & {
     id: bigint;
     organizer: string;
@@ -56,6 +58,7 @@ export declare namespace EventTicketing {
     ticketsSold: bigint;
     eventDate: bigint;
     isEventOver: boolean;
+    isCanceled: boolean;
   };
 }
 
@@ -63,6 +66,7 @@ export interface EventTicketingInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "buyTicket"
+      | "cancelEvent"
       | "createEvent"
       | "eventCount"
       | "events"
@@ -74,6 +78,7 @@ export interface EventTicketingInterface extends Interface {
       | "getTicketsOwned"
       | "isEventActive"
       | "owner"
+      | "refundTicket"
       | "setOwner"
       | "usdcToken"
       | "withdrawFunds"
@@ -81,14 +86,20 @@ export interface EventTicketingInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "EventCanceled"
       | "EventCreated"
       | "FundsWithdrawn"
       | "TicketPurchased"
+      | "TicketRefunded"
   ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "buyTicket",
     values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "cancelEvent",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "createEvent",
@@ -132,6 +143,10 @@ export interface EventTicketingInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "refundTicket",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setOwner",
     values: [AddressLike]
   ): string;
@@ -142,6 +157,10 @@ export interface EventTicketingInterface extends Interface {
   ): string;
 
   decodeFunctionResult(functionFragment: "buyTicket", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "cancelEvent",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "createEvent",
     data: BytesLike
@@ -177,12 +196,28 @@ export interface EventTicketingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "refundTicket",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "usdcToken", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "withdrawFunds",
     data: BytesLike
   ): Result;
+}
+
+export namespace EventCanceledEvent {
+  export type InputTuple = [eventId: BigNumberish];
+  export type OutputTuple = [eventId: bigint];
+  export interface OutputObject {
+    eventId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace EventCreatedEvent {
@@ -260,6 +295,24 @@ export namespace TicketPurchasedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TicketRefundedEvent {
+  export type InputTuple = [
+    eventId: BigNumberish,
+    attendee: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [eventId: bigint, attendee: string, amount: bigint];
+  export interface OutputObject {
+    eventId: bigint;
+    attendee: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export interface EventTicketing extends BaseContract {
   connect(runner?: ContractRunner | null): EventTicketing;
   waitForDeployment(): Promise<this>;
@@ -309,6 +362,12 @@ export interface EventTicketing extends BaseContract {
     "nonpayable"
   >;
 
+  cancelEvent: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   createEvent: TypedContractMethod<
     [
       _name: string,
@@ -326,7 +385,17 @@ export interface EventTicketing extends BaseContract {
   events: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
+      [
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        boolean
+      ] & {
         organizer: string;
         name: string;
         description: string;
@@ -335,6 +404,7 @@ export interface EventTicketing extends BaseContract {
         ticketsSold: bigint;
         eventDate: bigint;
         isEventOver: boolean;
+        isCanceled: boolean;
       }
     ],
     "view"
@@ -390,6 +460,12 @@ export interface EventTicketing extends BaseContract {
 
   owner: TypedContractMethod<[], [string], "view">;
 
+  refundTicket: TypedContractMethod<
+    [_eventId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   setOwner: TypedContractMethod<[_newOwner: AddressLike], [void], "nonpayable">;
 
   usdcToken: TypedContractMethod<[], [string], "view">;
@@ -412,6 +488,9 @@ export interface EventTicketing extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "cancelEvent"
+  ): TypedContractMethod<[_eventId: BigNumberish], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "createEvent"
   ): TypedContractMethod<
     [
@@ -432,7 +511,17 @@ export interface EventTicketing extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, string, string, bigint, bigint, bigint, bigint, boolean] & {
+      [
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        boolean
+      ] & {
         organizer: string;
         name: string;
         description: string;
@@ -441,6 +530,7 @@ export interface EventTicketing extends BaseContract {
         ticketsSold: bigint;
         eventDate: bigint;
         isEventOver: boolean;
+        isCanceled: boolean;
       }
     ],
     "view"
@@ -496,6 +586,9 @@ export interface EventTicketing extends BaseContract {
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "refundTicket"
+  ): TypedContractMethod<[_eventId: BigNumberish], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "setOwner"
   ): TypedContractMethod<[_newOwner: AddressLike], [void], "nonpayable">;
   getFunction(
@@ -505,6 +598,13 @@ export interface EventTicketing extends BaseContract {
     nameOrSignature: "withdrawFunds"
   ): TypedContractMethod<[_eventId: BigNumberish], [void], "nonpayable">;
 
+  getEvent(
+    key: "EventCanceled"
+  ): TypedContractEvent<
+    EventCanceledEvent.InputTuple,
+    EventCanceledEvent.OutputTuple,
+    EventCanceledEvent.OutputObject
+  >;
   getEvent(
     key: "EventCreated"
   ): TypedContractEvent<
@@ -526,8 +626,26 @@ export interface EventTicketing extends BaseContract {
     TicketPurchasedEvent.OutputTuple,
     TicketPurchasedEvent.OutputObject
   >;
+  getEvent(
+    key: "TicketRefunded"
+  ): TypedContractEvent<
+    TicketRefundedEvent.InputTuple,
+    TicketRefundedEvent.OutputTuple,
+    TicketRefundedEvent.OutputObject
+  >;
 
   filters: {
+    "EventCanceled(uint256)": TypedContractEvent<
+      EventCanceledEvent.InputTuple,
+      EventCanceledEvent.OutputTuple,
+      EventCanceledEvent.OutputObject
+    >;
+    EventCanceled: TypedContractEvent<
+      EventCanceledEvent.InputTuple,
+      EventCanceledEvent.OutputTuple,
+      EventCanceledEvent.OutputObject
+    >;
+
     "EventCreated(uint256,address,string,uint256,uint256,uint256)": TypedContractEvent<
       EventCreatedEvent.InputTuple,
       EventCreatedEvent.OutputTuple,
@@ -559,6 +677,17 @@ export interface EventTicketing extends BaseContract {
       TicketPurchasedEvent.InputTuple,
       TicketPurchasedEvent.OutputTuple,
       TicketPurchasedEvent.OutputObject
+    >;
+
+    "TicketRefunded(uint256,address,uint256)": TypedContractEvent<
+      TicketRefundedEvent.InputTuple,
+      TicketRefundedEvent.OutputTuple,
+      TicketRefundedEvent.OutputObject
+    >;
+    TicketRefunded: TypedContractEvent<
+      TicketRefundedEvent.InputTuple,
+      TicketRefundedEvent.OutputTuple,
+      TicketRefundedEvent.OutputObject
     >;
   };
 }

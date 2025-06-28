@@ -43,3 +43,15 @@ export async function getUsdcContract(signer: Signer): Promise<ERC20> {
     signer
   ) as unknown as ERC20;
 }
+
+export async function cancelEvent(signer: Signer, eventId: bigint) {
+  const contract = await getEventTicketingContract(signer);
+  const tx = await contract.cancelEvent(eventId);
+  await tx.wait();
+}
+
+export async function refundTicket(signer: Signer, eventId: bigint) {
+  const contract = await getEventTicketingContract(signer);
+  const tx = await contract.refundTicket(eventId);
+  await tx.wait();
+}
