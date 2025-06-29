@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
 export const ContractError: React.FC = () => {
   return (
@@ -12,12 +11,7 @@ export const ContractError: React.FC = () => {
         later or contact support.
       </p>
       <div className="flex gap-3">
-        <Button asChild>
-          <Link to="/">Return Home</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link to="/about">About</Link>
-        </Button>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     </div>
   );

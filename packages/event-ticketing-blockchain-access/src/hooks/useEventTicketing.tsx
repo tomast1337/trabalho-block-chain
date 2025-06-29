@@ -71,11 +71,60 @@ export const EventTicketingProvider: React.FC<{
           const _signer = await _provider.getSigner();
           setSigner(_signer);
         } catch (e) {
-          setError(
-            e instanceof Error
-              ? e
-              : new Error("Failed to initialize provider and signer")
-          );
+          // Handle user rejection specifically
+          if (e && typeof e === "object") {
+            // Check for direct code property
+            if ("code" in e && (e as any).code === 4001) {
+              setError(
+                new Error(
+                  "Wallet connection was rejected. Please connect your wallet to continue."
+                )
+              );
+              return;
+            }
+
+            // Check for nested error structure (like the one you're seeing)
+            if ("info" in e && typeof (e as any).info === "object") {
+              const info = (e as any).info;
+              if (info.error && info.error.code === 4001) {
+                setError(
+                  new Error(
+                    "Wallet connection was rejected. Please connect your wallet to continue."
+                  )
+                );
+                return;
+              }
+            }
+
+            // Check for ACTION_REJECTED in the error message
+            if ("message" in e && typeof (e as any).message === "string") {
+              const message = (e as any).message.toLowerCase();
+              if (
+                message.includes("action_rejected") ||
+                message.includes("user rejected")
+              ) {
+                setError(
+                  new Error(
+                    "Wallet connection was rejected. Please connect your wallet to continue."
+                  )
+                );
+                return;
+              }
+            }
+
+            // Fallback to generic error handling
+            setError(
+              e instanceof Error
+                ? e
+                : new Error("Failed to initialize provider and signer")
+            );
+          } else {
+            setError(
+              e instanceof Error
+                ? e
+                : new Error("Failed to initialize provider and signer")
+            );
+          }
         }
       } else {
         setError(new Error("Ethereum provider not found"));

@@ -21,6 +21,13 @@ const AppContent: React.FC = () => {
     if (error.message.includes("provider not found")) {
       return <EthereumProviderErrorPage />;
     }
+
+    // Handle wallet connection rejection specifically
+    if (error.message.includes("Wallet connection was rejected")) {
+      return <EthereumProviderErrorPage error={error} />;
+    }
+
+    console.error(error);
     return <ContractError />;
   }
 
