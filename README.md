@@ -50,6 +50,7 @@ This single command will:
 
 | Command             | Description                                                     |
 | :------------------ | :-------------------------------------------------------------- |
+| `npm install -g pnpm`| Install pnpm                                                   |
 | `pnpm install`      | Install all dependencies                                        |
 | `pnpm dev`          | Start the complete development environment (backend & frontend) |
 | `pnpm dev:backend`  | Start local blockchain and deploy contracts                     |
