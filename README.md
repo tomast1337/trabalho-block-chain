@@ -22,8 +22,11 @@
    git clone git@github.com:tomast1337/trabalho-block-chain.git
    cd trabalho-block-chain
    ```
-
-2. Install dependencies:
+2. install pnpm
+   ```bash
+   npm install -g pnpm
+   ```
+3. Install dependencies:
    ```bash
    pnpm install
    ```
